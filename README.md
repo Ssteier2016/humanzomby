@@ -1,2 +1,3 @@
 # bitcoiner
 # bitcoiner
+# aerocoin
