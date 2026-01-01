@@ -3,50 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ZOMBIE SURVIVOR: MULTIPLAYER ULTIMATE</title>
+    <meta name="theme-color" content="#020408">
+    <meta name="description" content="Zombie Survivor - Juego multijugador de supervivencia con 10 tipos de zombies">
+    <title>ZOMBIE SURVIVOR: MULTIPLAYER EDITION</title>
     
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
     
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="/logozombie.png">
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(registration => {
+                    console.log('ServiceWorker registrado con éxito:', registration.scope);
+                }).catch(error => {
+                    console.log('Error al registrar ServiceWorker:', error);
+                });
+            });
+        }
+    </script>
+    
+    <!-- Estilos y Fuentes -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap');
-        body { margin: 0; overflow: hidden; background: #020408; font-family: 'Inter', sans-serif; touch-action: none; }
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Inter:wght@400;500;700&display=swap');
+        
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #020408; 
+            font-family: 'Inter', sans-serif; 
+            touch-action: none; 
+            -webkit-tap-highlight-color: transparent;
+        }
         canvas { display: block; }
-        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; color: white; }
+        .ui-layer { 
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100%; 
+            height: 100%; 
+            pointer-events: none; 
+            z-index: 10; 
+            color: white; 
+        }
         .clickable { pointer-events: auto; }
         .font-game { font-family: 'Orbitron', sans-serif; }
         
+        /* Modales */
         .modal-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.92); display: none; flex-direction: column;
-            align-items: center; justify-content: center; z-index: 1000;
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); 
+            display: none; 
+            flex-direction: column;
+            align-items: center; 
+            justify-content: center; 
+            z-index: 1000;
             backdrop-filter: blur(15px);
         }
 
+        /* Tarjetas de Avatar */
         .avatar-card {
             border: 3px solid #1e293b;
             transition: all 0.2s;
             cursor: pointer;
             background: rgba(30, 41, 59, 0.3);
+            border-radius: 16px;
+        }
+        .avatar-card:hover {
+            border-color: #3b82f6;
+            transform: scale(1.05);
         }
         .avatar-card.selected {
             border-color: #3b82f6;
             background: rgba(59, 130, 246, 0.2);
             transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
         }
 
+        /* Botón de Acción */
         #action-btn {
             width: 85px; height: 85px;
             background: radial-gradient(circle, #ef4444 0%, #7f1d1d 100%);
             border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 32px; border: 4px solid rgba(255,255,255,0.2);
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            font-size: 32px; 
+            border: 4px solid rgba(255,255,255,0.2);
             box-shadow: 0 0 30px rgba(239, 68, 68, 0.4);
+            cursor: pointer;
+            user-select: none;
+        }
+        #action-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
         }
 
+        /* Estados */
         .status-badge {
             padding: 4px 12px;
             border-radius: 99px;
@@ -60,298 +118,236 @@
         .protected { background: #3b82f6; }
         .invisible-mod { background: #6366f1; }
         .soldier-mod { background: #fbbf24; color: black; }
+        .moto-mod { background: #ec4899; }
         
+        /* Animación de Subida de Nivel */
         .level-up-anim {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: #fbbf24; font-size: 4rem; font-weight: 900; z-index: 100;
-            pointer-events: none; opacity: 0; text-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
+            position: fixed; 
+            top: 50%; left: 50%; 
+            transform: translate(-50%, -50%);
+            color: #fbbf24; 
+            font-size: 4rem; 
+            font-weight: 900; 
+            z-index: 100;
+            pointer-events: none; 
+            opacity: 0; 
+            text-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
             transition: opacity 0.5s;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); }
         }
 
-        .config-slider {
-            width: 100%;
-            height: 10px;
-            -webkit-appearance: none;
-            background: #1e293b;
-            border-radius: 5px;
-            outline: none;
+        /* Estadísticas Multijugador */
+        .multiplayer-stats {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 8px 12px;
+            backdrop-filter: blur(10px);
+            margin-top: 10px;
+            min-width: 160px;
         }
-        .config-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 25px;
-            height: 25px;
-            border-radius: 50%;
-            background: #3b82f6;
+
+        /* Botón de Google */
+        .google-btn {
+            background: white;
+            color: #444;
+            border-radius: 12px;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-weight: 500;
+            border: none;
             cursor: pointer;
+            transition: all 0.2s;
+        }
+        .google-btn:hover {
+            background: #f5f5f5;
+            transform: translateY(-2px);
+        }
+        .google-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Indicador de Conexión */
+        .connection-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .connected { background-color: #10b981; }
+        .disconnected { background-color: #ef4444; }
+        .connecting { background-color: #fbbf24; }
+
+        /* Instrucciones de Controles */
+        .controls-help {
+            position: absolute;
+            bottom: 120px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 10px;
+            border-left: 4px solid #3b82f6;
+            font-size: 12px;
+            max-width: 300px;
+            backdrop-filter: blur(5px);
         }
     </style>
 </head>
 <body>
-
-    <!-- Perfil de usuario (solo visible cuando hay sesión) -->
-    <div id="user-profile" class="user-profile hidden">
-        <img id="user-photo" class="user-avatar" src="" alt="Foto de perfil">
-        <div>
-            <div id="user-name" class="text-white font-bold text-sm"></div>
-            <button onclick="signOut()" class="logout-btn">Cerrar sesión</button>
-        </div>
-    </div>
-
+    <!-- Animación de Nivel -->
     <div id="level-up-text" class="level-up-anim font-game">¡NIVEL UP!</div>
 
-    <!-- Pantalla de Login -->
-    <div id="login-screen" class="modal-screen flex clickable px-6 text-center">
-        <h1 class="text-6xl font-black mb-6 text-blue-500 italic font-game tracking-tighter">SURVIVOR ULTIMATE</h1>
-        <p class="text-gray-400 mb-10 text-sm">Inicia sesión para guardar tu progreso y competir en el ranking global</p>
-        
-        <div class="w-full max-w-md flex flex-col gap-6">
-            <button onclick="signInWithGoogle()" class="bg-white text-gray-800 font-black py-5 rounded-2xl text-xl hover:bg-gray-100 font-game transition-all hover:scale-105 flex items-center justify-center gap-3">
-                <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="Google" class="w-6 h-6">
-                INICIAR SESIÓN CON GOOGLE
-            </button>
+    <!-- Pantalla de Inicio -->
+    <div id="startup-screen" class="modal-screen flex clickable px-6 text-center">
+        <div class="flex flex-col items-center">
+            <img src="/logozombie.png" alt="Zombie Survivor Logo" class="w-32 h-32 mb-4">
+            <h1 class="text-5xl font-black mb-2 text-blue-500 italic font-game tracking-tighter">SURVIVOR MULTIPLAYER</h1>
+            <p id="cloud-status" class="text-gray-500 mb-8 text-[10px] tracking-[0.4em] font-bold uppercase">Cargando sistema multijugador...</p>
             
-            <div class="text-gray-500 text-sm">
-                <p>O juega como invitado (progreso local)</p>
-                <button onclick="playAsGuest()" class="text-blue-400 hover:text-blue-300 underline mt-2">
-                    Continuar como invitado
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Pantalla de Inicio Principal -->
-    <div id="main-menu" class="modal-screen flex clickable px-6 text-center hidden">
-        <h1 class="text-6xl font-black mb-6 text-blue-500 italic font-game tracking-tighter">SURVIVOR ULTIMATE</h1>
-        <p class="text-gray-400 mb-10 text-sm">Modo Multijugador con Arma UZI - Laberintos y Construcción</p>
-        
-        <div class="w-full max-w-md flex flex-col gap-6">
-            <button onclick="showSinglePlayerSetup()" class="bg-blue-600 text-white font-black py-5 rounded-2xl text-xl hover:bg-blue-700 font-game transition-all hover:scale-105">
-                🎮 SINGLE PLAYER
-            </button>
-            <button onclick="showMultiplayerSetup()" class="bg-green-600 text-white font-black py-5 rounded-2xl text-xl hover:bg-green-700 font-game transition-all hover:scale-105">
-                👥 MULTIPLAYER
-            </button>
-            <button onclick="showConfiguration()" class="bg-purple-600 text-white font-black py-5 rounded-2xl text-xl hover:bg-purple-700 font-game transition-all hover:scale-105">
-                ⚙️ CONFIGURACIÓN
-            </button>
-            <button onclick="showLeaderboard()" class="bg-yellow-600 text-white font-black py-5 rounded-2xl text-xl hover:bg-yellow-700 font-game transition-all hover:scale-105">
-                🏆 RANKING GLOBAL
-            </button>
-        </div>
-    </div>
-
-    <!-- Pantalla de Configuración Single Player -->
-    <div id="singleplayer-screen" class="modal-screen flex clickable px-6 text-center hidden">
-        <h1 class="text-5xl font-black mb-6 text-blue-500 italic font-game tracking-tighter">SINGLE PLAYER</h1>
-        
-        <div id="setup-ui" class="flex flex-col items-center w-full max-w-md">
-            <div class="grid grid-cols-4 gap-3 mb-8 w-full">
-                <div onclick="selectAvatar(0)" id="av-0" class="avatar-card selected p-2 rounded-2xl">
-                    <img src="https://cdn-icons-png.flaticon.com/512/3408/3408545.png" alt="Icono 1">
+            <!-- Estado de Conexión -->
+            <div id="connection-status" class="mb-6 p-3 rounded-xl bg-black/40 border border-white/10">
+                <div class="flex items-center gap-2">
+                    <span id="connection-dot" class="connection-dot disconnected"></span>
+                    <span id="connection-text" class="text-sm">Desconectado del servidor</span>
                 </div>
-                <div onclick="selectAvatar(1)" id="av-1" class="avatar-card p-2 rounded-2xl">
-                    <img src="https://cdn-icons-png.flaticon.com/512/4140/4140037.png" alt="Icono 2">
-                </div>
-                <div onclick="selectAvatar(2)" id="av-2" class="avatar-card p-2 rounded-2xl">
-                    <img src="https://cdn-icons-png.flaticon.com/512/1154/1154443.png" alt="Icono 3">
-                </div>
-                <div onclick="selectAvatar(3)" id="av-3" class="avatar-card p-2 rounded-2xl">
-                    <img src="https://cdn-icons-png.flaticon.com/512/606/606553.png" alt="Icono 4">
+                <div id="server-stats" class="text-xs text-gray-400 mt-2 hidden">
+                    Jugadores en línea: <span id="online-players">0</span> | 
+                    Bots activos: <span id="active-bots">0</span>
                 </div>
             </div>
 
-            <div class="w-full flex flex-col gap-4">
-                <input id="player-name-input" type="text" maxlength="10" placeholder="NOMBRE DEL AGENTE" 
-                    class="bg-slate-900 border-2 border-slate-700 text-white p-4 rounded-2xl text-center font-bold focus:border-blue-500 outline-none uppercase tracking-widest">
-                
-                <button id="start-btn" onclick="startGame(false, 'single')" class="bg-blue-600 text-white font-black py-4 rounded-2xl text-xl hover:bg-blue-700 font-game">
-                    NUEVA MISIÓN
-                </button>
-                <button id="resume-btn" onclick="startGame(true, 'single')" class="bg-green-600 text-white font-black py-4 rounded-2xl text-xl hover:bg-green-700 font-game">
-                    REANUDAR PARTIDA GUARDADA
-                </button>
-                <button onclick="showMainMenu()" class="bg-gray-700 text-white font-black py-4 rounded-2xl text-xl hover:bg-gray-800 font-game">
-                    VOLVER
-                </button>
-            </div>
-        </div>
-    </div>
+            <div id="setup-ui" class="hidden flex flex-col items-center w-full max-w-md">
+                <!-- Selección de Avatar -->
+                <div class="mb-8">
+                    <h3 class="text-gray-400 mb-3 text-sm font-bold uppercase">Selecciona tu Avatar</h3>
+                    <div class="grid grid-cols-4 gap-3 mb-6">
+                        <div onclick="selectAvatar(0)" id="av-0" class="avatar-card selected p-3 rounded-2xl">
+                            <img src="https://cdn-icons-png.flaticon.com/512/3408/3408545.png" alt="Soldado" class="w-16 h-16 mx-auto">
+                        </div>
+                        <div onclick="selectAvatar(1)" id="av-1" class="avatar-card p-3 rounded-2xl">
+                            <img src="https://cdn-icons-png.flaticon.com/512/4140/4140037.png" alt="Explorador" class="w-16 h-16 mx-auto">
+                        </div>
+                        <div onclick="selectAvatar(2)" id="av-2" class="avatar-card p-3 rounded-2xl">
+                            <img src="https://cdn-icons-png.flaticon.com/512/1154/1154443.png" alt="Médico" class="w-16 h-16 mx-auto">
+                        </div>
+                        <div onclick="selectAvatar(3)" id="av-3" class="avatar-card p-3 rounded-2xl">
+                            <img src="https://cdn-icons-png.flaticon.com/512/606/606553.png" alt="Ingeniero" class="w-16 h-16 mx-auto">
+                        </div>
+                    </div>
+                </div>
 
-    <!-- Pantalla de Configuración Multijugador -->
-    <div id="multiplayer-screen" class="modal-screen flex clickable px-6 text-center hidden">
-        <h1 class="text-5xl font-black mb-6 text-green-500 italic font-game tracking-tighter">MULTIPLAYER</h1>
-        
-        <div class="w-full max-w-md flex flex-col items-center gap-6">
-            <div class="grid grid-cols-4 gap-3 mb-4 w-full">
-                <div onclick="selectAvatar(0)" id="mp-av-0" class="avatar-card p-2 rounded-2xl">
-                    <img src="https://cdn-icons-png.flaticon.com/512/3408/3408545.png" alt="Icono 1">
+                <!-- Nombre del Jugador -->
+                <div class="w-full mb-6">
+                    <input id="player-name-input" type="text" maxlength="15" placeholder="NOMBRE DEL AGENTE" 
+                        class="w-full bg-slate-900 border-2 border-slate-700 text-white p-4 rounded-2xl text-center font-bold focus:border-blue-500 outline-none uppercase tracking-widest">
                 </div>
-                <div onclick="selectAvatar(1)" id="mp-av-1" class="avatar-card p-2 rounded-2xl">
-                    <img src="https://cdn-icons-png.flaticon.com/512/4140/4140037.png" alt="Icono 2">
-                </div>
-                <div onclick="selectAvatar(2)" id="mp-av-2" class="avatar-card selected p-2 rounded-2xl">
-                    <img src="https://cdn-icons-png.flaticon.com/512/1154/1154443.png" alt="Icono 3">
-                </div>
-                <div onclick="selectAvatar(3)" id="mp-av-3" class="avatar-card p-2 rounded-2xl">
-                    <img src="https://cdn-icons-png.flaticon.com/512/606/606553.png" alt="Icono 4">
-                </div>
-            </div>
 
-            <input id="mp-player-name-input" type="text" maxlength="10" placeholder="TU NOMBRE" 
-                class="bg-slate-900 border-2 border-slate-700 text-white p-4 rounded-2xl text-center font-bold focus:border-green-500 outline-none uppercase tracking-widest w-full">
+                <!-- Autenticación con Google -->
+                <div id="auth-section" class="w-full mb-6">
+                    <div class="flex flex-col gap-3">
+                        <button id="google-login-btn" onclick="googleSignIn()" class="google-btn">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24">
+                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                            </svg>
+                            Iniciar con Google (Multijugador)
+                        </button>
+                        <button onclick="playAsGuest()" class="bg-slate-700 text-white font-bold py-4 rounded-2xl text-base hover:bg-slate-600">
+                            Jugar como Invitado (Solo Local)
+                        </button>
+                    </div>
+                    <div id="user-info" class="hidden mt-3 p-3 bg-green-900/30 rounded-xl border border-green-500/30">
+                        <div class="flex items-center gap-3">
+                            <img id="user-avatar" src="" alt="Avatar" class="w-8 h-8 rounded-full">
+                            <div>
+                                <div class="font-bold text-sm" id="user-name"></div>
+                                <div class="text-xs text-green-400">✅ Autenticado para multijugador</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-            <div class="w-full bg-black/40 p-4 rounded-2xl border border-white/10">
-                <h3 class="text-green-400 font-bold text-xs uppercase mb-3 text-center tracking-widest">MODOS DISPONIBLES</h3>
-                <div class="flex flex-col gap-2">
-                    <button onclick="startMultiplayerGame('coop')" class="bg-green-700 text-white font-bold py-3 rounded-xl hover:bg-green-800">
-                        👥 COOPERATIVO
+                <!-- Botones de Juego -->
+                <div class="w-full flex flex-col gap-4">
+                    <button id="start-btn" onclick="startGame(false)" class="bg-blue-600 text-white font-black py-4 rounded-2xl text-xl hover:bg-blue-700 font-game">
+                        NUEVA MISIÓN MULTIJUGADOR
                     </button>
-                    <button onclick="startMultiplayerGame('pvp')" class="bg-red-700 text-white font-bold py-3 rounded-xl hover:bg-red-800">
-                        ⚔️ PVP (VS ZOMBIES)
-                    </button>
-                    <button onclick="startMultiplayerGame('survival')" class="bg-yellow-700 text-white font-bold py-3 rounded-xl hover:bg-yellow-800">
-                        🛡️ SUPERVIVENCIA
+                    <button id="resume-btn" onclick="startGame(true)" class="hidden bg-green-600 text-white font-black py-4 rounded-2xl text-xl hover:bg-green-700 font-game">
+                        REANUDAR NIVEL <span id="saved-level">1</span>
                     </button>
                 </div>
-            </div>
 
-            <button onclick="showMainMenu()" class="bg-gray-700 text-white font-black py-4 rounded-2xl text-xl hover:bg-gray-800 font-game w-full">
-                VOLVER
-            </button>
-        </div>
-    </div>
-
-    <!-- Pantalla de Configuración -->
-    <div id="configuration-screen" class="modal-screen flex clickable px-6 text-center hidden">
-        <h1 class="text-5xl font-black mb-6 text-purple-500 italic font-game tracking-tighter">CONFIGURACIÓN</h1>
-        
-        <div class="w-full max-w-md flex flex-col gap-6 bg-black/40 p-6 rounded-2xl border border-white/10">
-            
-            <div class="text-left">
-                <label class="text-white font-bold block mb-2">🧟‍♀️ VELOCIDAD ZOMBIES</label>
-                <input type="range" min="50" max="200" value="100" class="config-slider" id="zombie-speed-slider">
-                <div class="flex justify-between text-xs text-gray-400 mt-1">
-                    <span>Lento</span>
-                    <span id="zombie-speed-value">Normal</span>
-                    <span>Rápido</span>
-                </div>
-            </div>
-
-            <div class="text-left">
-                <label class="text-white font-bold block mb-2">👤 VELOCIDAD AVATAR</label>
-                <input type="range" min="50" max="200" value="100" class="config-slider" id="avatar-speed-slider">
-                <div class="flex justify-between text-xs text-gray-400 mt-1">
-                    <span>Lento</span>
-                    <span id="avatar-speed-value">Normal</span>
-                    <span>Rápido</span>
-                </div>
-            </div>
-
-            <div class="text-left">
-                <label class="text-white font-bold block mb-2">🏍️ VELOCIDAD MOTO</label>
-                <input type="range" min="50" max="200" value="100" class="config-slider" id="moto-speed-slider">
-                <div class="flex justify-between text-xs text-gray-400 mt-1">
-                    <span>Lento</span>
-                    <span id="moto-speed-value">Normal</span>
-                    <span>Rápido</span>
-                </div>
-            </div>
-
-            <div class="text-left">
-                <label class="text-white font-bold block mb-2">🤖 CANTIDAD DE BOTS</label>
-                <input type="range" min="0" max="10" value="2" class="config-slider" id="bot-count-slider">
-                <div class="flex justify-between text-xs text-gray-400 mt-1">
-                    <span>0</span>
-                    <span id="bot-count-value">2 Bots</span>
-                    <span>10</span>
-                </div>
-            </div>
-
-            <div class="text-left">
-                <label class="text-white font-bold block mb-2">🧟 TAMAÑO ZOMBIES</label>
-                <input type="range" min="70" max="150" value="100" class="config-slider" id="zombie-size-slider">
-                <div class="flex justify-between text-xs text-gray-400 mt-1">
-                    <span>Pequeño</span>
-                    <span id="zombie-size-value">Normal</span>
-                    <span>Grande</span>
-                </div>
-            </div>
-
-            <div class="text-left">
-                <label class="text-white font-bold block mb-2">🔎 NIVEL DE ZOOM</label>
-                <input type="range" min="50" max="200" value="85" class="config-slider" id="zoom-level-slider">
-                <div class="flex justify-between text-xs text-gray-400 mt-1">
-                    <span>Lejos</span>
-                    <span id="zoom-level-value">Normal</span>
-                    <span>Cerca</span>
-                </div>
-            </div>
-
-            <div class="text-left">
-                <label class="text-white font-bold block mb-2">🎮 DIFICULTAD</label>
-                <select id="difficulty-select" class="w-full bg-slate-900 border-2 border-slate-700 text-white p-3 rounded-xl">
-                    <option value="easy">Fácil</option>
-                    <option value="normal" selected>Normal</option>
-                    <option value="hard">Difícil</option>
-                    <option value="nightmare">Pesadilla</option>
-                </select>
-            </div>
-
-            <div class="flex gap-4">
-                <button onclick="saveConfiguration()" class="bg-green-600 text-white font-black py-4 flex-1 rounded-2xl hover:bg-green-700">
-                    GUARDAR
-                </button>
-                <button onclick="showMainMenu()" class="bg-gray-700 text-white font-black py-4 flex-1 rounded-2xl hover:bg-gray-800">
-                    VOLVER
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Pantalla de Ranking Global -->
-    <div id="leaderboard-screen" class="modal-screen flex clickable px-6 text-center hidden">
-        <h1 class="text-5xl font-black mb-6 text-yellow-500 italic font-game tracking-tighter">🏆 RANKING GLOBAL</h1>
-        
-        <div class="w-full max-w-2xl bg-black/40 p-6 rounded-2xl border border-white/10">
-            <div class="flex justify-between mb-4">
-                <button onclick="loadGlobalLeaderboard()" class="bg-blue-600 text-white px-4 py-2 rounded-lg">
-                    🔄 Actualizar
-                </button>
-                <button onclick="showMainMenu()" class="bg-gray-700 text-white px-4 py-2 rounded-lg">
-                    Volver
-                </button>
-            </div>
-            
-            <div id="global-leaderboard" class="space-y-2 max-h-96 overflow-y-auto">
-                <div class="text-gray-400 text-center py-4">
-                    Cargando ranking...
+                <!-- Instrucciones -->
+                <div class="mt-8 text-gray-400 text-xs text-center">
+                    <p class="mb-2">🎮 Controles: WASD para mover, botón rojo para atacar</p>
+                    <p>🌐 Conéctate con Google para jugar con otros en tiempo real</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- UI Principal -->
+    <!-- UI Principal del Juego -->
     <div class="ui-layer p-4 flex flex-col justify-between">
+        <!-- Sección Superior -->
         <div class="flex justify-between items-start">
-            <div class="flex flex-col gap-1">
+            <div class="flex flex-col gap-2">
+                <!-- Vida y Pausa -->
                 <div class="flex items-center gap-3">
                     <div id="lives-display" class="text-2xl drop-shadow-lg">❤️❤️❤️</div>
-                    <button id="pause-btn" onclick="togglePause()" class="clickable bg-white/10 p-2 rounded-xl text-xl backdrop-blur-md border border-white/20">⏸️</button>
-                    <button id="exit-btn" onclick="exitToMenu()" class="clickable bg-red-600/20 p-2 rounded-xl text-xl backdrop-blur-md border border-red-500/30 hidden">🚪</button>
+                    <button id="pause-btn" onclick="togglePause()" class="clickable bg-white/10 p-2 rounded-xl text-xl backdrop-blur-md border border-white/20 hover:bg-white/20">
+                        ⏸️
+                    </button>
                 </div>
-                <div id="hp-bar-cont" class="w-40 h-3 bg-gray-900/80 rounded-full border border-white/10 overflow-hidden mt-1">
-                    <div id="hp-bar" class="h-full bg-red-500 transition-all"></div>
+                
+                <!-- Barras de Estado -->
+                <div id="hp-bar-cont" class="w-40 h-3 bg-gray-900/80 rounded-full border border-white/10 overflow-hidden">
+                    <div id="hp-bar" class="h-full bg-red-500 transition-all duration-300"></div>
                 </div>
-                <div id="status-container" class="flex flex-col items-start gap-1"></div>
+                <div id="gas-bar-cont" class="w-32 h-2 bg-gray-900/80 rounded-full border border-white/10 overflow-hidden mt-1 hidden">
+                    <div id="gas-bar" class="h-full bg-yellow-500"></div>
+                </div>
+                
+                <!-- Estados Activos -->
+                <div id="status-container" class="flex flex-wrap gap-1 mt-2 max-w-xs"></div>
+                
+                <!-- Estadísticas Multijugador -->
+                <div id="multiplayer-stats" class="multiplayer-stats hidden">
+                    <div class="text-[9px] text-blue-400 font-bold uppercase mb-1">Sala Multijugador</div>
+                    <div class="flex justify-between text-[11px]">
+                        <div>
+                            <span class="text-gray-400">Jugadores:</span>
+                            <span id="online-count" class="ml-1 font-bold text-green-400">1</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400">Bots:</span>
+                            <span id="bot-count" class="ml-1 font-bold text-amber-400">10</span>
+                        </div>
+                    </div>
+                    <div class="text-[8px] text-gray-500 mt-1" id="room-info">Sala: Principal</div>
+                </div>
             </div>
 
-            <div class="flex flex-col items-end gap-2">
-                <div class="bg-black/40 p-2 px-4 rounded-xl backdrop-blur-md border border-white/10 text-right">
+            <!-- Nivel y Arma -->
+            <div class="flex flex-col items-end gap-3">
+                <div class="bg-black/40 p-3 px-5 rounded-xl backdrop-blur-md border border-white/10 text-right">
                     <div class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Nivel</div>
                     <div id="level-display" class="text-2xl font-game font-black italic">01</div>
                 </div>
-                <div class="relative mt-2">
-                    <button onclick="quickSwapWeapon()" class="clickable bg-slate-800 w-16 h-16 rounded-2xl border-2 border-slate-600 shadow-xl flex items-center justify-center text-3xl">
+                
+                <div class="relative">
+                    <button onclick="quickSwapWeapon()" class="clickable bg-slate-800 w-16 h-16 rounded-2xl border-2 border-slate-600 shadow-xl flex items-center justify-center text-3xl hover:bg-slate-700 active:scale-95">
                         <span id="weapon-icon-btn">🔪</span>
                     </button>
                     <div id="ammo-count" class="absolute -bottom-2 -left-2 bg-amber-500 text-black text-[10px] font-bold px-2 rounded-full border border-white shadow-md">∞</div>
@@ -359,335 +355,428 @@
             </div>
         </div>
 
+        <!-- Sección Inferior -->
         <div class="flex justify-between items-end p-2">
             <div class="flex flex-col gap-2">
-                <div class="bg-black/60 p-3 rounded-2xl border border-white/10 flex flex-col gap-1">
-                    <div class="flex justify-between gap-6 items-center">
+                <!-- Objetivos -->
+                <div class="bg-black/60 p-3 rounded-2xl border border-white/10 flex flex-col gap-2">
+                    <div class="flex justify-between items-center">
                         <span class="text-[9px] text-green-400 font-bold uppercase tracking-widest">Objetivo Nivel</span>
                         <span id="z-remain" class="text-xs font-mono font-bold text-white">0/100</span>
                     </div>
-                    <div class="w-full h-1 bg-gray-800 rounded-full overflow-hidden">
-                        <div id="objective-progress" class="h-full bg-green-500 transition-all" style="width: 0%"></div>
+                    <div class="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+                        <div id="objective-progress" class="h-full bg-green-500 transition-all duration-500" style="width: 0%"></div>
                     </div>
                     <div class="mt-1 flex justify-between items-center border-t border-white/5 pt-1">
                         <span class="text-[8px] text-gray-400 font-bold uppercase">Horda Detectada:</span>
                         <span id="map-zombies-count" class="text-[10px] font-mono text-red-400 font-bold">0</span>
                     </div>
                 </div>
-            </div>
-            <div class="flex flex-col items-end gap-2">
-                <div id="score-display" class="bg-black/40 p-2 px-4 rounded-xl text-right">
-                    <div class="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Score</div>
-                    <div id="score-val" class="text-lg font-game font-black text-white">00000</div>
+
+                <!-- Instrucciones de Controles -->
+                <div class="controls-help hidden md:block">
+                    <div class="font-bold text-blue-400 mb-1">Controles:</div>
+                    <div class="grid grid-cols-2 gap-1 text-[10px]">
+                        <div>WASD: Movimiento</div>
+                        <div>Botón 🔥: Atacar</div>
+                        <div>Toque/Pulsación: Mover</div>
+                        <div>Pellizco: Zoom</div>
+                    </div>
                 </div>
-                <div id="action-btn" class="clickable select-none">💥</div>
+            </div>
+
+            <!-- Puntuación y Acción -->
+            <div class="flex flex-col items-end gap-3">
+                <div id="score-display" class="bg-black/40 p-3 px-5 rounded-xl text-right border border-white/10">
+                    <div class="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Puntuación</div>
+                    <div id="score-val" class="text-xl font-game font-black text-white">00000</div>
+                </div>
+                <div id="action-btn" class="clickable select-none active:scale-95">💥</div>
             </div>
         </div>
     </div>
 
     <!-- Pantalla de Fin de Juego -->
     <div id="game-over" class="modal-screen clickable">
-        <h2 class="text-6xl font-black mb-4 text-red-600 font-game italic drop-shadow-2xl uppercase text-center">AGENTE CAÍDO</h2>
-        <div id="final-stats" class="text-gray-400 mb-8 font-mono text-center text-lg leading-relaxed"></div>
-        <div class="w-full max-w-sm bg-black/40 p-4 rounded-2xl border border-white/10 mb-6">
-            <h3 class="text-blue-400 font-bold text-xs uppercase mb-3 text-center tracking-widest">Mejores Records</h3>
-            <div id="leaderboard-list" class="flex flex-col gap-2"></div>
+        <div class="text-center max-w-lg">
+            <h2 class="text-6xl font-black mb-4 text-red-600 font-game italic drop-shadow-2xl uppercase">AGENTE CAÍDO</h2>
+            <div id="final-stats" class="text-gray-400 mb-8 font-mono text-center text-lg leading-relaxed"></div>
+            
+            <div class="w-full bg-black/40 p-5 rounded-2xl border border-white/10 mb-6">
+                <h3 class="text-blue-400 font-bold text-sm uppercase mb-4 text-center tracking-widest">🏆 Mejores Records</h3>
+                <div id="leaderboard-list" class="flex flex-col gap-2"></div>
+            </div>
+            
+            <div class="flex gap-4">
+                <button onclick="location.reload()" class="bg-white text-black font-black py-4 px-8 rounded-2xl text-lg font-game shadow-2xl hover:bg-gray-100 flex-1">
+                    REINTENTAR
+                </button>
+                <button onclick="showStartScreen()" class="bg-blue-600 text-white font-black py-4 px-8 rounded-2xl text-lg font-game shadow-2xl hover:bg-blue-700 flex-1">
+                    MENÚ
+                </button>
+            </div>
         </div>
-        <button onclick="showMainMenu()" class="bg-white text-black font-black py-5 px-16 rounded-2xl text-xl font-game shadow-2xl">MENÚ PRINCIPAL</button>
     </div>
 
+    <!-- Canvas del Juego -->
     <canvas id="gameCanvas"></canvas>
 
-    <script>
-        // =========== CONFIGURACIÓN FIREBASE ===========
+    <!-- Firebase y Juego -->
+    <script type="module">
+        // ================= CONFIGURACIÓN FIREBASE =================
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { 
+            getAuth, 
+            signInWithPopup, 
+            GoogleAuthProvider, 
+            signInAnonymously,
+            onAuthStateChanged,
+            signOut 
+        } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            getDoc, 
+            collection, 
+            query, 
+            getDocs,
+            serverTimestamp 
+        } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
         const firebaseConfig = {
-            apiKey: "AIzaSyDM9GK7_gnd0GaVbxwK9xnwl0qk75MnFXw",
-            authDomain: "playmobil-2d74d.firebaseapp.com",
-            projectId: "playmobil-2d74d",
-            storageBucket: "playmobil-2d74d.firebasestorage.app",
-            messagingSenderId: "85202851148",
-            appId: "1:85202851148:web:bf8eba63238c06c7b4ebe9",
-            measurementId: "G-MX2B76PCD6"
+            apiKey: "AIzaSyBsemzWe2LUcKhAJg9UU9N_3YNcmrphiCk",
+            authDomain: "bibl-ia-fa5b1.firebaseapp.com",
+            databaseURL: "https://bibl-ia-fa5b1-default-rtdb.firebaseio.com",
+            projectId: "bibl-ia-fa5b1",
+            storageBucket: "bibl-ia-fa5b1.firebasestorage.app",
+            messagingSenderId: "472775758204",
+            appId: "1:472775758204:web:df943b09264376dca594f9",
+            measurementId: "G-RB7SW3JV2X"
         };
 
         // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'zombie-survivor-multiplayer-v2';
+        const googleProvider = new GoogleAuthProvider();
 
-        // =========== VARIABLES GLOBALES DE USUARIO ===========
+        // Variables globales
         let currentUser = null;
-        let isGuest = false;
-        let userData = null;
+        let savedData = null;
+        let gameSocket = null;
+        let isAuthenticated = false;
+        let multiplayerPlayers = new Map();
+        let serverStats = { onlinePlayers: 1, activeBots: 10, roomId: 'main_room' };
 
-        // =========== FUNCIONES DE AUTENTICACIÓN ===========
-        async function signInWithGoogle() {
+        // ================= AUTENTICACIÓN =================
+        window.googleSignIn = async () => {
             try {
-                const provider = new firebase.auth.GoogleAuthProvider();
-                provider.addScope('profile');
-                provider.addScope('email');
-                
-                const result = await auth.signInWithPopup(provider);
+                const result = await signInWithPopup(auth, googleProvider);
                 currentUser = result.user;
-                isGuest = false;
+                isAuthenticated = true;
                 
-                // Crear o actualizar perfil del usuario en Firestore
-                await createOrUpdateUserProfile();
+                updateUserUI();
+                updateConnectionStatus('connected', 'Conectado con Google');
                 
-                // Mostrar menú principal
-                showMainMenu();
-                updateUserProfileUI();
+                // Mostrar opción multijugador
+                document.getElementById('start-btn').innerHTML = 'NUEVA MISIÓN MULTIJUGADOR';
+                document.getElementById('start-btn').classList.add('bg-purple-600');
                 
-                console.log("Usuario autenticado:", currentUser.displayName);
+                console.log(`[👤] Autenticado: ${currentUser.displayName}`);
+                
             } catch (error) {
-                console.error("Error en autenticación:", error);
-                alert("Error al iniciar sesión: " + error.message);
+                console.error('[❌] Error Google Sign-In:', error);
+                updateConnectionStatus('disconnected', 'Error de autenticación');
+            }
+        };
+
+        window.playAsGuest = async () => {
+            try {
+                await signInAnonymously(auth);
+                currentUser = auth.currentUser;
+                isAuthenticated = false;
+                
+                updateUserUI();
+                updateConnectionStatus('connected', 'Modo Invitado (Solo Local)');
+                
+                // Ocultar opción multijugador
+                document.getElementById('start-btn').innerHTML = 'NUEVA MISIÓN LOCAL';
+                document.getElementById('start-btn').classList.remove('bg-purple-600');
+                
+            } catch (error) {
+                console.error('[❌] Error invitado:', error);
+            }
+        };
+
+        function updateUserUI() {
+            const userInfo = document.getElementById('user-info');
+            const authSection = document.getElementById('auth-section');
+            
+            if (currentUser && !currentUser.isAnonymous) {
+                document.getElementById('user-name').textContent = currentUser.displayName || 'Usuario';
+                document.getElementById('user-avatar').src = currentUser.photoURL || 'https://cdn-icons-png.flaticon.com/512/4140/4140037.png';
+                userInfo.classList.remove('hidden');
+                authSection.classList.add('hidden');
+            } else {
+                userInfo.classList.add('hidden');
+                authSection.classList.remove('hidden');
             }
         }
 
-        function playAsGuest() {
-            currentUser = null;
-            isGuest = true;
-            showMainMenu();
-            document.getElementById('user-profile').classList.add('hidden');
-        }
-
-        async function signOut() {
-            try {
-                await auth.signOut();
-                currentUser = null;
-                isGuest = false;
-                userData = null;
-                
-                document.getElementById('login-screen').style.display = 'flex';
-                document.getElementById('user-profile').classList.add('hidden');
-                document.getElementById('main-menu').style.display = 'none';
-            } catch (error) {
-                console.error("Error al cerrar sesión:", error);
-            }
-        }
-
-        async function createOrUpdateUserProfile() {
-            if (!currentUser) return;
+        // ================= WEBSOCKET MULTIJUGADOR =================
+        async function connectToGameServer() {
+            const SERVER_URL = "ws://localhost:8765"; // Cambia a tu servidor en producción
             
             try {
-                const userRef = db.collection('users').doc(currentUser.uid);
-                const userDoc = await userRef.get();
+                updateConnectionStatus('connecting', 'Conectando al servidor...');
                 
-                if (!userDoc.exists) {
-                    // Crear nuevo perfil
-                    await userRef.set({
-                        uid: currentUser.uid,
-                        displayName: currentUser.displayName,
-                        email: currentUser.email,
-                        photoURL: currentUser.photoURL || 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
-                        totalScore: 0,
-                        highestLevel: 1,
-                        totalKills: 0,
-                        gamesPlayed: 0,
-                        highestScore: 0,
-                        avatarConfig: {
-                            selectedAvatar: 0,
-                            playerName: currentUser.displayName || 'Jugador'
-                        }
-                    });
-                    console.log("Nuevo usuario creado en Firestore");
-                } else {
-                    // Actualizar último login
-                    await userRef.update({
-                        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    console.log("Usuario existente actualizado");
-                }
+                gameSocket = new WebSocket(SERVER_URL);
                 
-                // Cargar datos del usuario
-                userData = (await userRef.get()).data();
-                
-                // Cargar configuración del avatar si existe
-                if (userData.avatarConfig) {
-                    document.getElementById('player-name-input').value = userData.avatarConfig.playerName || '';
-                    selectedAvatarIdx = userData.avatarConfig.selectedAvatar || 0;
-                    updateAvatarSelection();
-                }
-            } catch (error) {
-                console.error("Error al crear/actualizar perfil:", error);
-            }
-        }
-
-        function updateUserProfileUI() {
-            if (!currentUser) return;
-            
-            const userProfile = document.getElementById('user-profile');
-            const userPhoto = document.getElementById('user-photo');
-            const userName = document.getElementById('user-name');
-            
-            userPhoto.src = currentUser.photoURL || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
-            userName.textContent = currentUser.displayName || 'Usuario';
-            userProfile.classList.remove('hidden');
-        }
-
-        // =========== FUNCIONES DE FIRESTORE ===========
-        async function saveGameToFirestore(level, score, kills) {
-            if (!currentUser || isGuest) return;
-            
-            try {
-                const gameRef = db.collection('games').doc();
-                const userRef = db.collection('users').doc(currentUser.uid);
-                
-                // Guardar partida
-                await gameRef.set({
-                    userId: currentUser.uid,
-                    userName: currentUser.displayName,
-                    level: level,
-                    score: score,
-                    kills: kills,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    avatarIndex: selectedAvatarIdx,
-                    playerName: document.getElementById('player-name-input').value.trim() || 'Jugador'
-                });
-                
-                // Actualizar estadísticas del usuario
-                const userDoc = await userRef.get();
-                const currentData = userDoc.data();
-                
-                await userRef.update({
-                    totalScore: firebase.firestore.FieldValue.increment(score),
-                    highestLevel: Math.max(currentData?.highestLevel || 1, level),
-                    totalKills: firebase.firestore.FieldValue.increment(kills),
-                    gamesPlayed: firebase.firestore.FieldValue.increment(1),
-                    lastGame: firebase.firestore.FieldValue.serverTimestamp(),
-                    highestScore: Math.max(currentData?.highestScore || 0, score),
-                    avatarConfig: {
-                        selectedAvatar: selectedAvatarIdx,
-                        playerName: document.getElementById('player-name-input').value.trim() || currentUser.displayName || 'Jugador'
-                    }
-                });
-                
-                console.log("Partida guardada en Firestore");
-            } catch (error) {
-                console.error("Error al guardar en Firestore:", error);
-            }
-        }
-
-        async function loadGlobalLeaderboard() {
-            try {
-                const leaderboardDiv = document.getElementById('global-leaderboard');
-                leaderboardDiv.innerHTML = '<div class="text-gray-400 text-center py-4">Cargando ranking...</div>';
-                
-                // Obtener top 50 jugadores por puntaje más alto
-                const snapshot = await db.collection('users')
-                    .orderBy('highestScore', 'desc')
-                    .limit(50)
-                    .get();
-                
-                if (snapshot.empty) {
-                    leaderboardDiv.innerHTML = '<div class="text-gray-400 text-center py-4">No hay jugadores en el ranking aún</div>';
-                    return;
-                }
-                
-                let html = '';
-                let rank = 1;
-                
-                snapshot.forEach(doc => {
-                    const user = doc.data();
-                    const isCurrentUser = currentUser && user.uid === currentUser.uid;
+                gameSocket.onopen = async () => {
+                    console.log('[🌐] Conectado al servidor multijugador');
+                    updateConnectionStatus('connected', 'Conectado al servidor');
                     
-                    html += `
-                        <div class="leaderboard-entry ${isCurrentUser ? 'current-user' : ''}">
-                            <div class="flex items-center gap-3">
-                                <div class="rank-badge ${rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other'}">
-                                    ${rank}
-                                </div>
-                                <img src="${user.photoURL || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" 
-                                     class="w-8 h-8 rounded-full" alt="${user.displayName}">
-                                <div>
-                                    <div class="font-bold text-white">${user.displayName || 'Anónimo'}</div>
-                                    <div class="text-xs text-gray-400">Nivel máx: ${user.highestLevel || 1}</div>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <div class="font-bold text-yellow-400">${user.highestScore || 0} pts</div>
-                                <div class="text-xs text-gray-400">${user.totalKills || 0} kills totales</div>
-                            </div>
-                        </div>
-                    `;
-                    rank++;
-                });
+                    // Enviar datos de autenticación al servidor
+                    const token = currentUser ? await currentUser.getIdToken() : null;
+                    
+                    gameSocket.send(JSON.stringify({
+                        type: 'PLAYER_JOIN',
+                        playerData: {
+                            uid: currentUser?.uid || 'guest_' + Date.now(),
+                            name: document.getElementById('player-name-input').value || 'Agente',
+                            avatarIdx: selectedAvatarIdx,
+                            isGuest: !currentUser || currentUser.isAnonymous
+                        },
+                        firebaseToken: token
+                    }));
+                };
                 
-                leaderboardDiv.innerHTML = html;
+                gameSocket.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        handleServerMessage(data);
+                    } catch (e) {
+                        console.error('[❌] Error procesando mensaje:', e);
+                    }
+                };
+                
+                gameSocket.onclose = () => {
+                    console.log('[🔌] Desconectado del servidor');
+                    updateConnectionStatus('disconnected', 'Desconectado del servidor');
+                    gameSocket = null;
+                };
+                
+                gameSocket.onerror = (error) => {
+                    console.error('[❌] Error WebSocket:', error);
+                    updateConnectionStatus('disconnected', 'Error de conexión');
+                };
+                
             } catch (error) {
-                console.error("Error al cargar ranking:", error);
-                document.getElementById('global-leaderboard').innerHTML = 
-                    '<div class="text-red-400 text-center py-4">Error al cargar el ranking</div>';
+                console.error('[❌] Error conectando:', error);
+                updateConnectionStatus('disconnected', 'No se pudo conectar');
             }
         }
 
-        async function loadUserSavedGames() {
-            if (!currentUser || isGuest) return null;
-            
-            try {
-                const snapshot = await db.collection('games')
-                    .where('userId', '==', currentUser.uid)
-                    .orderBy('timestamp', 'desc')
-                    .limit(1)
-                    .get();
-                
-                if (!snapshot.empty) {
-                    const latestGame = snapshot.docs[0].data();
-                    return latestGame;
+        function handleServerMessage(data) {
+            switch(data.type) {
+                case 'SERVER_STATS':
+                    serverStats = data.stats;
+                    updateMultiplayerUI();
+                    break;
+                    
+                case 'PLAYER_UPDATE':
+                    updateRemotePlayers(data.players);
+                    break;
+                    
+                case 'ROOM_INFO':
+                    serverStats.roomId = data.roomId;
+                    serverStats.playerCount = data.playerCount;
+                    updateMultiplayerUI();
+                    break;
+                    
+                case 'CHAT_MESSAGE':
+                    showChatMessage(data);
+                    break;
+                    
+                case 'GAME_EVENT':
+                    handleGameEvent(data);
+                    break;
+            }
+        }
+
+        function updateRemotePlayers(players) {
+            multiplayerPlayers.clear();
+            players.forEach(player => {
+                if (player.uid !== (currentUser?.uid || 'guest')) {
+                    multiplayerPlayers.set(player.uid, player);
                 }
-            } catch (error) {
-                console.error("Error al cargar partidas guardadas:", error);
-            }
-            return null;
+            });
         }
 
-        // =========== CONFIGURACIÓN DEL JUEGO ===========
-        const gameConfig = {
-            zombieSpeed: 1.0,
-            avatarSpeed: 1.0,
-            motoSpeed: 1.0,
-            botCount: 2,
-            zombieSize: 1.0,
-            zoomLevel: 0.85,
-            difficulty: 'normal',
-            gameMode: 'single'
+        function updateMultiplayerUI() {
+            const statsEl = document.getElementById('multiplayer-stats');
+            if (serverStats.playerCount > 1) {
+                statsEl.classList.remove('hidden');
+                document.getElementById('online-count').textContent = serverStats.playerCount;
+                document.getElementById('bot-count').textContent = serverStats.activeBots || 10;
+                document.getElementById('room-info').textContent = `Sala: ${serverStats.roomId}`;
+            } else {
+                statsEl.classList.add('hidden');
+            }
+            
+            // Actualizar pantalla de inicio
+            document.getElementById('online-players').textContent = serverStats.playerCount || 1;
+            document.getElementById('active-bots').textContent = serverStats.activeBots || 10;
+            document.getElementById('server-stats').classList.remove('hidden');
+        }
+
+        function updateConnectionStatus(status, message) {
+            const dot = document.getElementById('connection-dot');
+            const text = document.getElementById('connection-text');
+            
+            dot.className = 'connection-dot ' + status;
+            text.textContent = message;
+        }
+
+        function sendPlayerUpdate(playerData) {
+            if (gameSocket && gameSocket.readyState === WebSocket.OPEN) {
+                gameSocket.send(JSON.stringify({
+                    type: 'PLAYER_UPDATE',
+                    player: {
+                        uid: currentUser?.uid || 'guest',
+                        ...playerData
+                    }
+                }));
+            }
+        }
+
+        // ================= FIRESTORE (GUARDADO) =================
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('cloud-status').innerText = "Perfil sincronizado";
+                await loadSavedData();
+                document.getElementById('setup-ui').classList.remove('hidden');
+                updateUserUI();
+            } else {
+                document.getElementById('setup-ui').classList.remove('hidden');
+            }
+        });
+
+        async function loadSavedData() {
+            if (!currentUser) return;
+            try {
+                const saveRef = doc(db, 'games', appId, 'users', currentUser.uid, 'saveData', 'current');
+                const snap = await getDoc(saveRef);
+                if (snap.exists()) {
+                    savedData = snap.data();
+                    document.getElementById('resume-btn').classList.remove('hidden');
+                    document.getElementById('saved-level').innerText = savedData.level;
+                    document.getElementById('player-name-input').value = savedData.name;
+                    window.selectAvatar(savedData.avatarIdx);
+                }
+            } catch (err) {
+                console.log('[⚠️] No hay datos guardados');
+            }
+        }
+
+        window.saveGameProgress = async (lvl, scr, name, avIdx) => {
+            if (!currentUser) return;
+            try {
+                const saveRef = doc(db, 'games', appId, 'users', currentUser.uid, 'saveData', 'current');
+                await setDoc(saveRef, { 
+                    level: lvl, 
+                    score: scr, 
+                    name, 
+                    avatarIdx: avIdx, 
+                    timestamp: serverTimestamp(),
+                    lastPlayed: new Date().toISOString()
+                });
+                console.log('[💾] Partida guardada en la nube');
+            } catch (err) {
+                console.error('[❌] Error guardando:', err);
+            }
         };
 
-        // =========== DEFINICIÓN DE ARMAS ===========
-        const WEAPONS = {
-            KNIFE: { id: 'KNIFE', icon: '🔪', range: 130, damage: 400, delay: 250, color: '#94a3b8' },
-            PISTOL: { id: 'PISTOL', icon: '🔫', speed: 28, damage: 150, delay: 200, color: '#fbbf24', ammo: 60 },
-            UZI: { id: 'UZI', icon: '🔫', speed: 35, damage: 80, delay: 50, color: '#22d3ee', ammo: 200, burst: true }
+        window.submitHighScore = async (name, score, level, avatarIdx) => {
+            if (!currentUser) return;
+            try {
+                const scoreRef = doc(collection(db, 'games', appId, 'leaderboard'), currentUser.uid);
+                await setDoc(scoreRef, { 
+                    name, 
+                    score, 
+                    level, 
+                    avatarIdx, 
+                    timestamp: serverTimestamp(),
+                    uid: currentUser.uid 
+                });
+            } catch (err) {
+                console.error('[❌] Error guardando puntuación:', err);
+            }
         };
 
-        // =========== DEFINICIÓN DE ZOMBIES ===========
-        // Usamos imágenes simples para los zombies
-        const ZOMBIE_IMAGES = [
-            'https://cdn-icons-png.flaticon.com/512/2742/2742018.png',
-            'https://cdn-icons-png.flaticon.com/512/2742/2742019.png',
-            'https://cdn-icons-png.flaticon.com/512/2742/2742020.png',
-            'https://cdn-icons-png.flaticon.com/512/2742/2742021.png'
-        ];
+        window.getLeaderboard = async () => {
+            try {
+                const lbRef = collection(db, 'games', appId, 'leaderboard');
+                const q = query(lbRef);
+                const snap = await getDocs(q);
+                const scores = [];
+                snap.forEach(doc => scores.push(doc.data()));
+                return scores.sort((a, b) => b.score - a.score).slice(0, 10);
+            } catch (err) {
+                console.error('[❌] Error cargando líderboard:', err);
+                return [];
+            }
+        };
 
-        const ZOMBIE_TYPES = Array.from({ length: 4 }, (_, i) => {
+        // ================= INICIALIZACIÓN =================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Intentar conectar al servidor
+            setTimeout(() => {
+                if (navigator.onLine) {
+                    connectToGameServer();
+                }
+            }, 1000);
+            
+            // Detectar cambios de conexión
+            window.addEventListener('online', () => {
+                connectToGameServer();
+            });
+            
+            window.addEventListener('offline', () => {
+                updateConnectionStatus('disconnected', 'Sin conexión a internet');
+            });
+        });
+    </script>
+
+    <!-- LÓGICA PRINCIPAL DEL JUEGO -->
+    <script>
+        // ================= CONFIGURACIÓN INICIAL =================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Definición de los 10 tipos de zombies
+        const ZOMBIE_TYPES = Array.from({ length: 10 }, (_, i) => {
             const index = i + 1;
             return {
                 id: index,
-                imageSrc: ZOMBIE_IMAGES[i % ZOMBIE_IMAGES.length],
-                radius: (35 + (i * 8)) * 1.15,
-                hp: 100 * Math.pow(1.5, i),
-                speed: 3.0 - (i * 0.2),
-                damage: 5 + (i * 3),
+                name: `Zombie Tipo ${index}`,
+                radius: (35 + (i * 12)) * 1.15,
+                hp: 150 * Math.pow(1.85, i),
+                speed: 3.2 - (i * 0.28),
+                damage: 5 + (i * 4),
                 scoreValue: 500 * index,
-                color: `hsl(${140 - (i * 20)}, 100%, 50%)`
+                color: `hsl(${140 - (i * 14)}, 100%, 50%)`
             };
         });
 
-        // =========== ASSETS ===========
+        // URLs de assets
         const ASSETS_URLS = {
+            hospital: 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png',
+            refuge: 'https://cdn-icons-png.flaticon.com/512/2590/2590525.png',
+            gasStation: 'https://cdn-icons-png.flaticon.com/512/1066/1066744.png',
             hero: [
                 'https://cdn-icons-png.flaticon.com/512/3408/3408545.png',
                 'https://cdn-icons-png.flaticon.com/512/4140/4140037.png',
@@ -697,177 +786,37 @@
             bot: 'https://cdn-icons-png.flaticon.com/512/1067/1067357.png'
         };
 
-        // =========== VARIABLES GLOBALES DEL JUEGO ===========
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        // Armas
+        const WEAPONS = {
+            KNIFE: { id: 'KNIFE', icon: '🔪', range: 130, damage: 400, delay: 250, color: '#94a3b8' },
+            PISTOL: { id: 'PISTOL', icon: '🔫', speed: 28, damage: 150, delay: 200, color: '#fbbf24', ammo: 60 },
+            PLASMA: { id: 'PLASMA', icon: '🔥', speed: 35, damage: 120, delay: 80, color: '#22d3ee', ammo: 150 },
+            ROCKET: { id: 'ROCKET', icon: '🚀', speed: 22, damage: 1500, delay: 1500, color: '#f87171', ammo: 15, explosive: true }
+        };
+
+        // Variables globales del juego
         let images = {};
-        let player, entities = [], bullets = [], splatters = [];
+        let player, entities = [], bullets = [], buildings = [], splatters = [], items = [], portals = [];
         let camera = { x: 0, y: 0, zoom: 0.85 };
         let keys = {}, touchMove = { x: 0, y: 0 }, touchStart = null, pinchDist = null;
         let isGameOver = false, isPaused = false, score = 0, kills = 0, targetKills = 100, currentLvl = 1;
         let activeWKey = 'KNIFE', selectedAvatarIdx = 0, isFiring = false, lastFire = 0;
+        let lastUpdateSent = 0;
+        let remotePlayers = new Map();
 
-        // =========== FUNCIONES DE INTERFAZ ===========
-        function showMainMenu() {
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('main-menu').style.display = 'flex';
-            document.getElementById('singleplayer-screen').style.display = 'none';
-            document.getElementById('multiplayer-screen').style.display = 'none';
-            document.getElementById('configuration-screen').style.display = 'none';
-            document.getElementById('leaderboard-screen').style.display = 'none';
-            document.getElementById('game-over').style.display = 'none';
-            isGameOver = false;
-        }
-
-        function showSinglePlayerSetup() {
-            document.getElementById('main-menu').style.display = 'none';
-            document.getElementById('singleplayer-screen').style.display = 'flex';
-        }
-
-        function showMultiplayerSetup() {
-            document.getElementById('main-menu').style.display = 'none';
-            document.getElementById('multiplayer-screen').style.display = 'flex';
-        }
-
-        function showConfiguration() {
-            document.getElementById('main-menu').style.display = 'none';
-            document.getElementById('configuration-screen').style.display = 'flex';
-            
-            // Cargar valores actuales
-            document.getElementById('zombie-speed-slider').value = gameConfig.zombieSpeed * 100;
-            document.getElementById('avatar-speed-slider').value = gameConfig.avatarSpeed * 100;
-            document.getElementById('moto-speed-slider').value = gameConfig.motoSpeed * 100;
-            document.getElementById('bot-count-slider').value = gameConfig.botCount;
-            document.getElementById('zombie-size-slider').value = gameConfig.zombieSize * 100;
-            document.getElementById('zoom-level-slider').value = gameConfig.zoomLevel * 100;
-            document.getElementById('difficulty-select').value = gameConfig.difficulty;
-            
-            updateSliderValues();
-        }
-
-        function showLeaderboard() {
-            document.getElementById('main-menu').style.display = 'none';
-            document.getElementById('leaderboard-screen').style.display = 'flex';
-            loadGlobalLeaderboard();
-        }
-
-        function updateSliderValues() {
-            const zombieVal = document.getElementById('zombie-speed-slider').value;
-            const avatarVal = document.getElementById('avatar-speed-slider').value;
-            const motoVal = document.getElementById('moto-speed-slider').value;
-            const botVal = document.getElementById('bot-count-slider').value;
-            const sizeVal = document.getElementById('zombie-size-slider').value;
-            const zoomVal = document.getElementById('zoom-level-slider').value;
-            
-            document.getElementById('zombie-speed-value').textContent = 
-                zombieVal == 100 ? 'Normal' : zombieVal < 100 ? 'Lento' : 'Rápido';
-            document.getElementById('avatar-speed-value').textContent = 
-                avatarVal == 100 ? 'Normal' : avatarVal < 100 ? 'Lento' : 'Rápido';
-            document.getElementById('moto-speed-value').textContent = 
-                motoVal == 100 ? 'Normal' : motoVal < 100 ? 'Lento' : 'Rápido';
-            document.getElementById('bot-count-value').textContent = `${botVal} Bots`;
-            document.getElementById('zombie-size-value').textContent = 
-                sizeVal == 100 ? 'Normal' : sizeVal < 100 ? 'Pequeño' : 'Grande';
-            document.getElementById('zoom-level-value').textContent = 
-                zoomVal == 100 ? 'Normal' : zoomVal < 100 ? 'Lejos' : 'Cerca';
-        }
-
-        function saveConfiguration() {
-            gameConfig.zombieSpeed = document.getElementById('zombie-speed-slider').value / 100;
-            gameConfig.avatarSpeed = document.getElementById('avatar-speed-slider').value / 100;
-            gameConfig.motoSpeed = document.getElementById('moto-speed-slider').value / 100;
-            gameConfig.botCount = parseInt(document.getElementById('bot-count-slider').value);
-            gameConfig.zombieSize = document.getElementById('zombie-size-slider').value / 100;
-            gameConfig.zoomLevel = document.getElementById('zoom-level-slider').value / 100;
-            gameConfig.difficulty = document.getElementById('difficulty-select').value;
-            
-            // Aplicar zoom inmediatamente
-            camera.zoom = gameConfig.zoomLevel;
-            
-            // Guardar en localStorage
-            localStorage.setItem('zombieSurvivorConfig', JSON.stringify(gameConfig));
-            
-            showMainMenu();
-        }
-
-        // =========== FUNCIONES DE AVATAR ===========
-        function selectAvatar(index) {
-            selectedAvatarIdx = index;
-            updateAvatarSelection();
-        }
-
-        function updateAvatarSelection() {
-            // Actualizar en singleplayer
-            for(let i = 0; i < 4; i++) {
-                const av = document.getElementById(`av-${i}`);
-                const mpAv = document.getElementById(`mp-av-${i}`);
-                if(av) av.classList.toggle('selected', i === selectedAvatarIdx);
-                if(mpAv) mpAv.classList.toggle('selected', i === selectedAvatarIdx);
-            }
-        }
-
-        // =========== FUNCIONES DE GUARDADO LOCAL ===========
-        function saveGameToCookie() {
-            const gameData = {
-                level: currentLvl,
-                score: score,
-                kills: kills,
-                targetKills: targetKills,
-                playerName: document.getElementById('player-name-input').value.trim(),
-                avatarIndex: selectedAvatarIdx,
-                timestamp: Date.now()
-            };
-            
-            const cookieValue = encodeURIComponent(JSON.stringify(gameData));
-            const expiration = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-            
-            document.cookie = `zombieSurvivorSave=${cookieValue}; expires=${expiration.toUTCString()}; path=/`;
-            console.log("Partida guardada en cookie");
-        }
-
-        function loadGameFromCookie() {
-            const cookies = document.cookie.split(';');
-            for (const cookie of cookies) {
-                const [name, value] = cookie.trim().split('=');
-                if (name === 'zombieSurvivorSave') {
-                    try {
-                        const gameData = JSON.parse(decodeURIComponent(value));
-                        
-                        // Verificar si la partida no es muy vieja (menos de 7 días)
-                        const age = Date.now() - gameData.timestamp;
-                        if (age < 7 * 24 * 60 * 60 * 1000) {
-                            // Mostrar información de partida guardada
-                            document.getElementById('resume-btn').classList.remove('hidden');
-                            return gameData;
-                        }
-                    } catch (e) {
-                        console.error("Error cargando partida guardada:", e);
-                    }
-                }
-            }
-            document.getElementById('resume-btn').classList.add('hidden');
-            return null;
-        }
-
-        // =========== CLASE ENTITY ===========
+        // ================= CLASE ENTIDAD =================
         class Entity {
             constructor(x, y, config) {
-                this.x = x; 
-                this.y = y;
+                this.x = x; this.y = y;
                 this.type = config.type; 
                 this.zombieTypeId = config.zombieTypeId || null;
                 this.isPlayer = config.isPlayer || false;
                 this.isBot = config.isBot || false;
                 this.team = config.team || 'zombie';
-                
-                // Aplicar tamaño de zombie desde configuración
-                const baseRadius = config.radius || 25;
-                this.radius = config.team === 'zombie' ? baseRadius * gameConfig.zombieSize : baseRadius;
-                
+                this.radius = config.radius || 25;
                 this.maxHp = config.hp || 100;
                 this.hp = this.maxHp;
-                this.baseSpeed = config.speed || 4;
-                this.speed = this.baseSpeed * (config.team === 'zombie' ? gameConfig.zombieSpeed : gameConfig.avatarSpeed);
+                this.speed = config.speed || 4;
                 this.damage = config.damage || 1;
                 this.angle = 0;
                 this.color = config.color || '#fff';
@@ -876,27 +825,43 @@
                 this.lives = config.lives || 3;
                 this.lastShot = 0;
                 this.hasHelmet = false;
-                this.playerName = config.playerName || 'Player';
-                this.avatarIdx = config.avatarIdx || 0;
-                
-                // Cargar imagen de zombie si es necesario
-                if (this.team === 'zombie' && this.zombieTypeId) {
-                    this.image = new Image();
-                    const zombieType = ZOMBIE_TYPES.find(z => z.id === this.zombieTypeId);
-                    this.image.src = zombieType ? zombieType.imageSrc : ZOMBIE_IMAGES[0];
-                }
+                this.onMotorcycle = false;
+                this.fuel = 0;
+                this.isInvisible = false;
+                this.id = config.id || Date.now() + Math.random();
             }
 
             update() {
                 if (this.invul > 0) this.invul--;
-                
                 if (this.isPlayer) { 
-                    // Actualizar ángulo basado en movimiento táctil
-                    if (touchMove.x || touchMove.y) {
-                        this.angle = Math.atan2(touchMove.y, touchMove.x);
+                    this.checkBuildings(); 
+                    this.checkItems(); 
+                    this.checkPortals(); 
+                    this.autoAim(); 
+                    
+                    if(this.onMotorcycle) { 
+                        this.fuel -= 0.18; 
+                        if(this.fuel <= 0) this.onMotorcycle = false; 
+                    }
+                    
+                    // Enviar actualización al servidor cada 100ms
+                    const now = Date.now();
+                    if (now - lastUpdateSent > 100 && window.sendPlayerUpdate) {
+                        window.sendPlayerUpdate({
+                            x: this.x,
+                            y: this.y,
+                            hp: this.hp,
+                            score: score,
+                            angle: this.angle,
+                            hasHelmet: this.hasHelmet,
+                            onMotorcycle: this.onMotorcycle,
+                            isInvisible: this.isInvisible
+                        });
+                        lastUpdateSent = now;
                     }
                 }
                 
+                if (this.isBot) this.aiBot();
                 if (this.team === 'zombie') { 
                     this.handleSeparation(); 
                     this.aiZombie(); 
@@ -904,354 +869,607 @@
             }
 
             handleSeparation() {
-                // Separación entre zombies
-                entities.forEach(e => {
-                    if (e !== this && e.team === 'zombie' && e.active) {
-                        const dx = this.x - e.x;
-                        const dy = this.y - e.y;
-                        const dist = Math.hypot(dx, dy);
-                        const minDist = this.radius + e.radius + 5;
-                        
-                        if (dist < minDist && dist > 0) {
-                            const force = (minDist - dist) / minDist * 0.5;
-                            this.x += (dx / dist) * force;
-                            this.y += (dy / dist) * force;
+                entities.forEach(other => {
+                    if (other !== this && other.team === 'zombie' && other.active) {
+                        let d = Math.hypot(this.x - other.x, this.y - other.y);
+                        let minD = this.radius + other.radius;
+                        if (d < minD) {
+                            let a = Math.atan2(this.y - other.y, this.x - other.x);
+                            let push = (minD - d) * 0.15;
+                            this.x += Math.cos(a) * push; 
+                            this.y += Math.sin(a) * push;
+                            other.x -= Math.cos(a) * push; 
+                            other.y -= Math.sin(a) * push;
                         }
                     }
                 });
             }
 
-            aiZombie() {
-                // Encontrar objetivo más cercano (jugador)
-                if (!player || !player.active) return;
+            checkBuildings() {
+                let statusHTML = '';
+                let inRefuge = false;
                 
-                const dx = player.x - this.x;
-                const dy = player.y - this.y;
-                const dist = Math.hypot(dx, dy);
+                buildings.forEach(b => {
+                    let d = Math.hypot(this.x - b.x, this.y - b.y);
+                    if (d < b.radius + 50) {
+                        if (b.type === 'hospital' && this.hp < this.maxHp) {
+                            this.hp += 0.9; 
+                            statusHTML += '<div class="status-badge healing">Regenerando HP</div>';
+                        }
+                        if (b.type === 'refuge') {
+                            inRefuge = true; 
+                            this.invul = Math.max(this.invul, 10);
+                            statusHTML += '<div class="status-badge invisible-mod">Sigilo Activo</div>';
+                        }
+                        if (b.type === 'gasStation' && this.onMotorcycle) {
+                            this.fuel = Math.min(100, this.fuel + 1.5);
+                            statusHTML += '<div class="status-badge protected">Cargando Nafta... ⛽</div>';
+                        }
+                    }
+                });
                 
-                // Actualizar ángulo hacia el jugador
-                this.angle = Math.atan2(dy, dx);
+                this.isInvisible = inRefuge;
+                if (this.hasHelmet) statusHTML += '<div class="status-badge soldier-mod">Casco Blindado 🪖</div>';
+                if (this.onMotorcycle) statusHTML += '<div class="status-badge moto-mod">Moto Lista 🏍️</div>';
                 
-                // Mover hacia el jugador
-                this.x += Math.cos(this.angle) * this.speed;
-                this.y += Math.sin(this.angle) * this.speed;
+                document.getElementById('status-container').innerHTML = statusHTML;
+            }
+
+            checkItems() {
+                items.forEach((it, i) => {
+                    if (Math.hypot(this.x - it.x, this.y - it.y) < this.radius + 40) {
+                        if (it.type === 'helmet' && !this.hasHelmet) {
+                            this.hasHelmet = true; 
+                            this.maxHp *= 1.25; 
+                            this.hp = this.maxHp;
+                        } else if (it.type === 'heart') {
+                            this.hp = Math.min(this.maxHp, this.hp + 60);
+                        } else if (it.type === 'ammo') {
+                            Object.keys(WEAPONS).forEach(k => { 
+                                if(WEAPONS[k].ammo) WEAPONS[k].ammo += 50; 
+                            });
+                        } else if (it.type === 'motorcycle' && !this.onMotorcycle) {
+                            this.onMotorcycle = true; 
+                            this.fuel = 100;
+                        }
+                        items.splice(i, 1); 
+                        updateHUD();
+                    }
+                });
+            }
+
+            checkPortals() {
+                portals.forEach((p, i) => {
+                    if (Math.hypot(this.x - p.x, this.y - p.y) < this.radius + 45) {
+                        this.x += (Math.random()-0.5) * 8500; 
+                        this.y += (Math.random()-0.5) * 8500;
+                        portals.splice(i, 1);
+                    }
+                });
+            }
+
+            autoAim() {
+                let target = null, minDist = 1100;
+                entities.forEach(e => {
+                    if (e.active && e.team === 'zombie') {
+                        let d = Math.hypot(e.x - this.x, e.y - this.y);
+                        if (d < minDist) { 
+                            minDist = d; 
+                            target = e; 
+                        }
+                    }
+                });
+                if (target) this.angle = Math.atan2(target.y - this.y, target.x - this.x);
+            }
+
+            aiBot() {
+                let target = null, minDist = 950;
+                entities.forEach(e => {
+                    if (e.active && e.team === 'zombie') {
+                        let d = Math.hypot(e.x - this.x, e.y - this.y);
+                        if (d < minDist) { 
+                            minDist = d; 
+                            target = e; 
+                        }
+                    }
+                });
                 
-                // Atacar si está cerca
-                if (dist < this.radius + player.radius + 10) {
-                    player.takeDamage(this.damage);
+                if (target) {
+                    this.angle = Math.atan2(target.y - this.y, target.x - this.x);
+                    let d = Math.hypot(target.x - this.x, target.y - this.y);
+                    if (d > 280) { 
+                        this.x += Math.cos(this.angle) * this.speed; 
+                        this.y += Math.sin(this.angle) * this.speed; 
+                    }
+                    if (Date.now() - this.lastShot > 450) { 
+                        spawnBullet(this, this.angle, this.color); 
+                        this.lastShot = Date.now(); 
+                    }
+                } else {
+                    this.x += Math.cos(this.angle) * this.speed * 0.4;
+                    if (Math.random() < 0.02) this.angle = Math.random() * Math.PI * 2;
                 }
             }
 
-            takeDamage(damage) {
+            aiZombie() {
+                // Atacar jugadores locales y remotos
+                let validTargets = entities.filter(e => e.isBot && e.active);
+                if (!player.isInvisible) validTargets.push(player);
+                
+                // Añadir jugadores remotos como objetivos
+                multiplayerPlayers.forEach(remotePlayer => {
+                    validTargets.push({
+                        x: remotePlayer.x,
+                        y: remotePlayer.y,
+                        radius: 25,
+                        isInvisible: false
+                    });
+                });
+                
+                let nearest = null, minDist = 4000;
+                validTargets.forEach(t => {
+                    let d = Math.hypot(t.x - this.x, t.y - this.y);
+                    if (d < minDist) { 
+                        minDist = d; 
+                        nearest = t; 
+                    }
+                });
+                
+                if (nearest) {
+                    this.angle = Math.atan2(nearest.y - this.y, nearest.x - this.x);
+                    let s = this.speed + (currentLvl * 0.08);
+                    this.x += Math.cos(this.angle) * s; 
+                    this.y += Math.sin(this.angle) * s;
+                    
+                    // Solo dañar si es un jugador local
+                    if (minDist < this.radius + nearest.radius && nearest.takeDamage) {
+                        nearest.takeDamage(this.damage);
+                    }
+                } else {
+                    this.x += Math.cos(this.angle) * this.speed * 0.25;
+                    if (Math.random() < 0.01) this.angle = Math.random() * Math.PI * 2;
+                }
+            }
+
+            takeDamage(amt) {
                 if (this.invul > 0) return;
+                this.hp -= amt;
                 
-                this.hp -= damage;
-                
-                if (this.isPlayer) {
-                    spawnSplatter(this.x, this.y, '#ef4444');
-                    this.invul = 60; // 1 segundo de invulnerabilidad
+                if (this.isPlayer) { 
+                    spawnSplatter(this.x, this.y, '#ef4444'); 
+                    this.invul = 180; 
                 }
                 
                 if (this.hp <= 0) {
-                    this.active = false;
-                    
-                    if (this.team === 'zombie') {
-                        kills++;
-                        const zombieType = ZOMBIE_TYPES.find(z => z.id === this.zombieTypeId);
-                        score += zombieType ? zombieType.scoreValue : 500;
-                        spawnSplatter(this.x, this.y, this.color);
-                        
-                        // Verificar si se completó el nivel
-                        if (kills >= targetKills) {
-                            levelUp();
-                        }
-                    } else if (this.isPlayer) {
-                        this.lives--;
-                        if (this.lives > 0) {
-                            this.active = true;
-                            this.hp = this.maxHp;
-                            this.x = 0;
-                            this.y = 0;
-                            this.invul = 180; // 3 segundos de invulnerabilidad
-                        } else {
-                            endGame();
-                        }
+                    if (this.isPlayer && this.lives > 1) {
+                        this.lives--; 
+                        this.hp = this.maxHp; 
+                        this.invul = 180;
+                        this.hasHelmet = false; 
+                        this.onMotorcycle = false; 
+                        updateHUD();
+                    } else {
+                        this.active = false;
+                        if (this.isPlayer) endGame(); 
+                        else onDeath(this);
                     }
-                    
-                    updateHUD();
                 }
+                
+                if (this.isPlayer) updateHUD();
             }
 
             draw() {
-                const sx = (this.x - camera.x) * camera.zoom + canvas.width/2;
-                const sy = (this.y - camera.y) * camera.zoom + canvas.height/2;
-                const size = this.radius * 2 * camera.zoom;
+                const sx = (this.x - camera.x) * camera.zoom;
+                const sy = (this.y - camera.y) * camera.zoom;
+                const size = (this.radius * 2) * camera.zoom;
                 
-                // Si está fuera de pantalla, no dibujar
-                if (sx < -size*2 || sx > canvas.width + size*2 || sy < -size*2 || sy > canvas.height + size*2) return;
-                
-                // Guardar contexto
+                if (sx < -size*2 || sx > canvas.width + size*2 || 
+                    sy < -size*2 || sy > canvas.height + size*2) return;
+
+                // Barra de HP
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(sx - size/2, sy - size/1.2, size, 5 * camera.zoom);
+                ctx.fillStyle = this.team === 'zombie' ? this.color : (this.isPlayer ? '#3b82f6' : this.color);
+                ctx.fillRect(sx - size/2, sy - size/1.2, size * (this.hp/this.maxHp), 5 * camera.zoom);
+
                 ctx.save();
                 ctx.translate(sx, sy);
                 
-                // Dibujar barra de vida
-                if (this.maxHp > 100) {
-                    const hpPercent = this.hp / this.maxHp;
-                    const barWidth = size * 0.8;
-                    const barHeight = 5 * camera.zoom;
-                    
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                    ctx.fillRect(-barWidth/2, -size - 10, barWidth, barHeight);
-                    
-                    ctx.fillStyle = this.team === 'zombie' ? '#ef4444' : '#10b981';
-                    ctx.fillRect(-barWidth/2, -size - 10, barWidth * hpPercent, barHeight);
-                    
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(-barWidth/2, -size - 10, barWidth, barHeight);
-                }
+                if (this.isPlayer && this.isInvisible) ctx.globalAlpha = 0.25;
+                else if (this.invul > 0 && Math.floor(Date.now()/100)%2===0) ctx.globalAlpha = 0.4;
+
+                ctx.rotate(this.angle + Math.PI/2);
                 
-                // Efecto de invulnerabilidad (parpadeo)
-                if (this.invul > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
-                    ctx.globalAlpha = 0.5;
-                }
-                
-                // Rotar según dirección
-                ctx.rotate(this.angle);
-                
-                // Dibujar la entidad
                 if (this.team === 'zombie') {
-                    // Dibujar zombie con imagen o círculo de respaldo
-                    if (this.image && this.image.complete) {
-                        // Añadir efecto de brillo rojo para zombies
-                        ctx.shadowBlur = 15;
-                        ctx.shadowColor = 'rgba(255, 0, 0, 0.7)';
-                        
-                        ctx.drawImage(this.image, -size/2, -size/2, size, size);
-                        ctx.shadowBlur = 0;
-                    } else {
-                        // Dibujo de respaldo para zombie
-                        ctx.fillStyle = this.color;
-                        ctx.beginPath();
-                        ctx.arc(0, 0, size/2, 0, Math.PI * 2);
-                        ctx.fill();
-                        
-                        // Ojos rojos
-                        ctx.fillStyle = '#ff0000';
-                        ctx.beginPath();
-                        ctx.arc(-size/4, -size/6, size/10, 0, Math.PI * 2);
-                        ctx.arc(size/4, -size/6, size/10, 0, Math.PI * 2);
-                        ctx.fill();
-                        
-                        // Boca
-                        ctx.strokeStyle = '#ff0000';
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        ctx.arc(0, size/6, size/6, 0, Math.PI);
-                        ctx.stroke();
-                    }
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, size/2, 0, Math.PI*2);
+                    ctx.fill();
+                    
+                    // Texto del tipo de zombie
+                    ctx.rotate(-(this.angle + Math.PI/2));
+                    ctx.font = `${10 * camera.zoom}px Arial`;
+                    ctx.fillStyle = 'white';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`Z${this.zombieTypeId}`, 0, -size/2 - 8);
+                    
                 } else if (this.isPlayer) {
-                    // Dibujar jugador con avatar seleccionado
-                    if (images.hero && images.hero[this.avatarIdx] && images.hero[this.avatarIdx].complete) {
-                        // Efecto de brillo azul para jugador
-                        ctx.shadowBlur = 20;
-                        ctx.shadowColor = 'rgba(59, 130, 246, 0.8)';
-                        
-                        ctx.drawImage(images.hero[this.avatarIdx], -size/2, -size/2, size, size);
-                        ctx.shadowBlur = 0;
-                    } else {
-                        // Dibujo de respaldo para jugador
-                        ctx.fillStyle = '#3b82f6';
-                        ctx.beginPath();
-                        ctx.arc(0, 0, size/2, 0, Math.PI * 2);
-                        ctx.fill();
-                        
-                        // Indicador de dirección
-                        ctx.strokeStyle = 'white';
-                        ctx.lineWidth = 3;
-                        ctx.beginPath();
-                        ctx.moveTo(0, 0);
-                        ctx.lineTo(size/2, 0);
-                        ctx.stroke();
+                    const avatarImg = images.hero[selectedAvatarIdx];
+                    if (avatarImg) {
+                        ctx.drawImage(avatarImg, -size/2, -size/2, size, size);
                     }
                     
-                    // Dibujar nombre del jugador
-                    ctx.rotate(-this.angle);
-                    ctx.fillStyle = 'white';
+                    // Nombre del jugador
+                    ctx.rotate(-(this.angle + Math.PI/2));
                     ctx.font = `${12 * camera.zoom}px Arial`;
+                    ctx.fillStyle = '#ffffff';
                     ctx.textAlign = 'center';
-                    ctx.textBaseline = 'bottom';
-                    ctx.fillText(this.playerName, 0, -size/2 - 5);
+                    ctx.fillText(playerName, 0, -size/2 - 10);
+                    
+                } else if (this.isBot) {
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, size/2, 0, Math.PI*2);
+                    ctx.fill();
+                    
+                    // Texto "BOT"
+                    ctx.rotate(-(this.angle + Math.PI/2));
+                    ctx.font = `${10 * camera.zoom}px Arial`;
+                    ctx.fillStyle = 'white';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('🤖', 0, -size/2 - 8);
                 }
                 
-                // Restaurar contexto
                 ctx.restore();
                 ctx.globalAlpha = 1.0;
             }
         }
 
-        // =========== FUNCIONES DEL JUEGO ===========
+        // ================= FUNCIONES DE DIBUJADO REMOTO =================
+        function drawRemotePlayers() {
+            multiplayerPlayers.forEach((playerData, playerId) => {
+                const sx = (playerData.x - camera.x) * camera.zoom;
+                const sy = (playerData.y - camera.y) * camera.zoom;
+                const size = 50 * camera.zoom;
+                
+                if (sx < -size*2 || sx > canvas.width + size*2 || 
+                    sy < -size*2 || sy > canvas.height + size*2) return;
+                
+                ctx.save();
+                ctx.translate(sx, sy);
+                
+                // Dibujar avatar
+                const avatarIdx = playerData.avatarIdx || 0;
+                const avatarImg = images.hero[avatarIdx];
+                if (avatarImg) {
+                    // Efecto de pulso para jugadores remotos
+                    const pulse = Math.sin(Date.now() / 500) * 0.1 + 0.9;
+                    ctx.scale(pulse, pulse);
+                    
+                    ctx.drawImage(avatarImg, -size/2, -size/2, size, size);
+                    
+                    // Borde azul para jugadores remotos
+                    ctx.strokeStyle = '#3b82f6';
+                    ctx.lineWidth = 2 * camera.zoom;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, size/2 + 2, 0, Math.PI*2);
+                    ctx.stroke();
+                }
+                
+                // Nombre del jugador
+                ctx.font = `${10 * camera.zoom}px Arial`;
+                ctx.fillStyle = '#ffffff';
+                ctx.textAlign = 'center';
+                ctx.fillText(playerData.name || 'Jugador', 0, -size/2 - 8);
+                
+                // Barra de HP
+                const hpPercent = (playerData.hp || 100) / 100;
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(-size/2, size/2 + 5, size, 4 * camera.zoom);
+                ctx.fillStyle = hpPercent > 0.5 ? '#10b981' : (hpPercent > 0.25 ? '#fbbf24' : '#ef4444');
+                ctx.fillRect(-size/2, size/2 + 5, size * hpPercent, 4 * camera.zoom);
+                
+                // Indicador de equipo
+                if (playerData.hasHelmet) {
+                    ctx.font = `${15 * camera.zoom}px Arial`;
+                    ctx.fillText('🪖', size/2 + 5, -size/2 + 5);
+                }
+                if (playerData.onMotorcycle) {
+                    ctx.font = `${15 * camera.zoom}px Arial`;
+                    ctx.fillText('🏍️', size/2 + 5, size/2 - 15);
+                }
+                
+                ctx.restore();
+            });
+        }
+
+        // ================= FUNCIONES DEL JUEGO =================
+        let playerName = 'Agente';
+        
+        function resolvePlayerCollisions() {
+            entities.forEach(e => {
+                if (e.active && e.team === 'zombie') {
+                    let d = Math.hypot(player.x - e.x, player.y - e.y);
+                    let minD = player.radius + e.radius;
+                    if (d < minD) {
+                        let a = Math.atan2(player.y - e.y, player.x - e.x);
+                        let overlap = minD - d;
+                        player.x += Math.cos(a) * overlap;
+                        player.y += Math.sin(a) * overlap;
+                    }
+                }
+            });
+        }
+
+        function onDeath(e) {
+            spawnSplatter(e.x, e.y, e.color);
+            if (e.team === 'zombie') {
+                kills++; 
+                score += ZOMBIE_TYPES.find(t => t.id === e.zombieTypeId).scoreValue;
+                
+                if (kills >= targetKills) {
+                    currentLvl++; 
+                    targetKills += 100; 
+                    kills = 0;
+                    
+                    // Animación de nivel
+                    document.getElementById('level-up-text').style.opacity = '1';
+                    setTimeout(() => {
+                        document.getElementById('level-up-text').style.opacity = '0';
+                    }, 2000);
+                    
+                    // Guardar progreso
+                    const n = document.getElementById('player-name-input').value;
+                    if(window.saveGameProgress) {
+                        window.saveGameProgress(currentLvl, score, n, selectedAvatarIdx);
+                    }
+                }
+            }
+            updateHUD();
+        }
+
+        function spawnBullet(owner, angle, color) {
+            let w = WEAPONS[activeWKey]; 
+            if (owner.isBot) w = WEAPONS.PISTOL;
+            
+            bullets.push({
+                x: owner.x, 
+                y: owner.y, 
+                vx: Math.cos(angle) * (w.speed || 18), 
+                vy: Math.sin(angle) * (w.speed || 18),
+                damage: w.damage + (currentLvl * 10), 
+                color: color || w.color, 
+                owner, 
+                life: 90, 
+                explosive: w.explosive
+            });
+        }
+
         function spawnSplatter(x, y, color) {
-            for (let i = 0; i < 5; i++) {
-                splatters.push({
-                    x: x + (Math.random() - 0.5) * 30,
-                    y: y + (Math.random() - 0.5) * 30,
-                    radius: 5 + Math.random() * 15,
-                    color: color,
-                    alpha: 0.8,
-                    life: 60
+            for(let i=0; i<8; i++) {
+                splatters.push({ 
+                    x: x+(Math.random()-0.5)*50, 
+                    y: y+(Math.random()-0.5)*50, 
+                    r: 12+Math.random()*35, 
+                    color, 
+                    alpha: 0.8 
                 });
             }
         }
 
-        function spawnZombie() {
-            const angle = Math.random() * Math.PI * 2;
-            const distance = 800 + Math.random() * 400;
-            const x = player.x + Math.cos(angle) * distance;
-            const y = player.y + Math.sin(angle) * distance;
-            
-            const zombieType = ZOMBIE_TYPES[Math.floor(Math.random() * Math.min(currentLvl, ZOMBIE_TYPES.length))];
-            entities.push(new Entity(x, y, {
-                type: 'zombie',
-                team: 'zombie',
-                zombieTypeId: zombieType.id,
-                radius: zombieType.radius,
-                hp: zombieType.hp,
-                speed: zombieType.speed,
-                damage: zombieType.damage,
-                color: zombieType.color
-            }));
-        }
-
-        function fireBullet(x, y, angle, weaponKey, isPlayer) {
-            const weapon = WEAPONS[weaponKey];
-            if (!weapon) return;
-            
-            if (weapon.ammo !== undefined) {
-                if (weapon.ammo <= 0) return;
-                weapon.ammo--;
-                document.getElementById('ammo-count').textContent = weapon.ammo;
+        function startGame(resume) {
+            playerName = document.getElementById('player-name-input').value.trim() || 'Agente';
+            if (!playerName) {
+                alert('Por favor, ingresa un nombre para tu agente');
+                return;
             }
             
-            bullets.push({
-                x: x,
-                y: y,
-                angle: angle,
-                speed: weapon.speed || 0,
-                range: weapon.range || 1000,
-                damage: weapon.damage,
-                color: weapon.color,
-                owner: isPlayer ? 'player' : 'bot',
-                life: 100
+            document.getElementById('startup-screen').style.display = 'none';
+            
+            // Crear jugador
+            player = new Entity(0, 0, { 
+                type: 'human', 
+                isPlayer: true, 
+                hp: 250, 
+                speed: 8.5, 
+                team: 'human', 
+                lives: 3 
+            });
+            
+            // Reiniciar arrays
+            entities = []; bullets = []; buildings = []; splatters = []; items = []; portals = [];
+            isGameOver = false; isPaused = false; score = 0; kills = 0;
+            
+            // Cargar datos guardados
+            if (resume && typeof savedData !== 'undefined' && savedData) {
+                currentLvl = savedData.level; 
+                score = savedData.score; 
+                targetKills = 100 + (currentLvl - 1) * 100;
+            } else { 
+                currentLvl = 1; 
+                targetKills = 100; 
+            }
+            
+            // Cargar assets
+            loadImages();
+            
+            // Spawn inicial
+            for(let i=0; i<4; i++) spawnBot();
+            for(let i=0; i<3; i++) spawnBuilding('hospital');
+            for(let i=0; i<3; i++) spawnBuilding('refuge');
+            for(let i=0; i<2; i++) spawnBuilding('gasStation');
+            
+            // Mostrar controles en móvil
+            if ('ontouchstart' in window) {
+                document.querySelector('.controls-help').classList.remove('hidden');
+            }
+            
+            updateHUD(); 
+            requestAnimationFrame(gameLoop);
+        }
+
+        function loadImages() {
+            Object.keys(ASSETS_URLS).forEach(k => {
+                if (Array.isArray(ASSETS_URLS[k])) {
+                    images[k] = ASSETS_URLS[k].map(u => { 
+                        let i = new Image(); 
+                        i.src = u; 
+                        return i; 
+                    });
+                } else { 
+                    images[k] = new Image(); 
+                    images[k].src = ASSETS_URLS[k]; 
+                }
+            });
+        }
+
+        function spawnBot() {
+            let a = Math.random()*Math.PI*2, d = 1300;
+            entities.push(new Entity(
+                player.x+Math.cos(a)*d, 
+                player.y+Math.sin(a)*d, 
+                { 
+                    type: 'bot', 
+                    isBot: true, 
+                    team: 'human-bot', 
+                    hp: 500, 
+                    speed: 5.8, 
+                    color: '#c084fc' 
+                }
+            ));
+        }
+
+        function spawnBuilding(type) {
+            let a = Math.random()*Math.PI*2, d = 1800 + Math.random()*2500;
+            buildings.push({ 
+                x: player.x+Math.cos(a)*d, 
+                y: player.y+Math.sin(a)*d, 
+                type, 
+                radius: 135, 
+                img: images[type] 
             });
         }
 
         function updateLogic() {
-            if (isPaused || isGameOver || !player) return;
-            
-            // Actualizar jugador
-            if (player.active) {
-                // Mover jugador basado en touch input
-                if (touchMove.x || touchMove.y) {
-                    const speed = player.speed;
-                    const dx = touchMove.x * speed;
-                    const dy = touchMove.y * speed;
-                    
-                    player.x += dx;
-                    player.y += dy;
-                }
-                
-                // Actualizar cámara para seguir al jugador
-                camera.x = player.x;
-                camera.y = player.y;
-                
-                // Disparar automático
-                if (isFiring && Date.now() - lastFire > WEAPONS[activeWKey].delay) {
-                    lastFire = Date.now();
-                    fireBullet(player.x, player.y, player.angle, activeWKey, true);
-                }
+            // Movimiento
+            let vx = 0, vy = 0;
+            if (keys['w']) vy = -1; 
+            if (keys['s']) vy = 1; 
+            if (keys['a']) vx = -1; 
+            if (keys['d']) vx = 1;
+            if (touchMove.x || touchMove.y) { vx = touchMove.x; vy = touchMove.y; }
+
+            if (vx || vy) {
+                let m = Math.hypot(vx, vy);
+                let s = player.onMotorcycle ? 26.0 : (player.hasHelmet ? player.speed * 1.25 : player.speed);
+                player.x += (vx/m) * s; 
+                player.y += (vy/m) * s;
             }
+
+            // Colisiones
+            resolvePlayerCollisions();
+
+            // Cámara
+            camera.x = player.x - (canvas.width/2)/camera.zoom; 
+            camera.y = player.y - (canvas.height/2)/camera.zoom;
             
-            // Actualizar entidades
-            entities.forEach(e => {
-                if (e.active) e.update();
-            });
-            
-            // Actualizar balas
-            bullets.forEach((b, i) => {
-                if (b.speed) {
-                    b.x += Math.cos(b.angle) * b.speed;
-                    b.y += Math.sin(b.angle) * b.speed;
-                    b.life--;
-                    
-                    // Verificar colisiones con zombies
-                    entities.forEach(e => {
-                        if (e.active && e.team === 'zombie' && Math.hypot(b.x - e.x, b.y - e.y) < e.radius) {
-                            e.takeDamage(b.damage);
-                            b.life = 0;
+            // Disparar
+            if (isFiring && Date.now() - lastFire > WEAPONS[activeWKey].delay) {
+                if (activeWKey === 'KNIFE') {
+                    entities.forEach(e => { 
+                        if (e.active && e.team === 'zombie' && 
+                            Math.hypot(e.x-player.x, e.y-player.y) < WEAPONS.KNIFE.range) {
+                            e.takeDamage(WEAPONS.KNIFE.damage); 
                         }
                     });
-                    
-                    if (b.life <= 0) {
-                        bullets.splice(i, 1);
-                    }
+                } else {
+                    if (WEAPONS[activeWKey].ammo > 0) { 
+                        spawnBullet(player, player.angle); 
+                        WEAPONS[activeWKey].ammo--; 
+                    } else activeWKey = 'KNIFE';
                 }
-            });
-            
-            // Spawnear zombies
-            if (entities.filter(e => e.team === 'zombie' && e.active).length < 15) {
-                spawnZombie();
+                lastFire = Date.now(); 
+                updateHUD();
             }
-            
-            // Actualizar salpicaduras
-            splatters.forEach((s, i) => {
-                s.life--;
-                if (s.life <= 0) {
-                    splatters.splice(i, 1);
-                }
-            });
-            
-            // Verificar si se completó el nivel
-            if (kills >= targetKills) {
-                levelUp();
-            }
-        }
 
-        function levelUp() {
-            currentLvl++;
-            kills = 0;
-            targetKills = 100 + (currentLvl - 1) * 100;
+            // Actualizar balas
+            bullets.forEach((b, i) => {
+                b.x += b.vx; b.y += b.vy; b.life--;
+                
+                // Colisión con entidades
+                entities.forEach(e => { 
+                    if (e.active && e !== b.owner && 
+                        Math.hypot(b.x-e.x, b.y-e.y) < e.radius) { 
+                        e.takeDamage(b.damage); 
+                        b.life = 0; 
+                    } 
+                });
+                
+                // Colisión con jugador
+                if (b.owner !== player && Math.hypot(b.x-player.x, b.y-player.y) < player.radius) { 
+                    player.takeDamage(b.damage * 0.4); 
+                    b.life = 0; 
+                }
+                
+                if (b.life <= 0) bullets.splice(i, 1);
+            });
+
+            // Spawn de zombies
+            const maxZ = 60 + (currentLvl * 40);
+            const zombieCount = entities.filter(e => e.team === 'zombie' && e.active).length;
             
-            // Mostrar animación
-            const levelUpText = document.getElementById('level-up-text');
-            levelUpText.textContent = `¡NIVEL ${currentLvl}!`;
-            levelUpText.style.opacity = 1;
-            
-            setTimeout(() => {
-                levelUpText.style.opacity = 0;
-            }, 1500);
-            
-            // Restaurar vida del jugador
-            if (player) {
-                player.hp = player.maxHp;
+            if (zombieCount < maxZ && Math.random() < (0.09 + currentLvl * 0.02)) {
+                let a = Math.random()*Math.PI*2, d = 1750, 
+                    rx = player.x+Math.cos(a)*d, 
+                    ry = player.y+Math.sin(a)*d;
+                
+                let typeIdx = Math.floor(Math.random() * Math.min(10, 1 + Math.floor(currentLvl/2)));
+                if (typeIdx >= 10) typeIdx = 9;
+                
+                const zd = ZOMBIE_TYPES[typeIdx];
+                entities.push(new Entity(rx, ry, { 
+                    type: 'zombie', 
+                    zombieTypeId: zd.id, 
+                    team: 'zombie', 
+                    hp: zd.hp + (currentLvl * 250), 
+                    radius: zd.radius, 
+                    speed: zd.speed, 
+                    damage: zd.damage, 
+                    color: zd.color 
+                }));
+            }
+
+            // Spawn de ítems
+            if (Math.random() < 0.006) {
+                let a = Math.random()*Math.PI*2, d = 1200, 
+                    rx = player.x+Math.cos(a)*d, 
+                    ry = player.y+Math.sin(a)*d;
+                let roll = Math.random();
+                
+                if(roll < 0.3) items.push({ x: rx, y: ry, type: 'ammo' });
+                else if(roll < 0.6) items.push({ x: rx, y: ry, type: 'heart' });
+                else if(roll < 0.8) items.push({ x: rx, y: ry, type: 'helmet' });
+                else items.push({ x: rx, y: ry, type: 'motorcycle' });
             }
             
-            // Guardar progreso
-            saveGameToCookie();
-            if (currentUser && !isGuest) {
-                saveGameToFirestore(currentLvl, score, 0);
+            // Spawn de portales
+            if (Math.random() < 0.0035) {
+                portals.push({ 
+                    x: player.x + (Math.random()-0.5)*3500, 
+                    y: player.y + (Math.random()-0.5)*3500 
+                });
             }
-            
-            updateHUD();
+
+            // Actualizar entidades
+            entities.forEach(e => e.update()); 
+            player.update();
+            entities = entities.filter(e => e.active || e.isBot);
         }
 
         function draw() {
-            // Limpiar canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
             // Fondo
-            ctx.fillStyle = '#020408';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#020408'; 
+            ctx.fillRect(0,0,canvas.width, canvas.height);
             
             // Grid
             ctx.strokeStyle = 'rgba(255,255,255,0.03)';
@@ -1269,433 +1487,288 @@
                 ctx.stroke(); 
             }
 
-            // Dibujar salpicaduras
-            splatters.forEach(s => {
-                ctx.globalAlpha = s.alpha * (s.life / 60);
-                ctx.fillStyle = s.color;
-                ctx.beginPath();
-                ctx.arc(
-                    (s.x - camera.x) * camera.zoom + canvas.width/2,
-                    (s.y - camera.y) * camera.zoom + canvas.height/2,
-                    s.radius * camera.zoom,
-                    0, Math.PI * 2
-                );
-                ctx.fill();
+            // Sangre
+            splatters.forEach(sp => { 
+                ctx.fillStyle = sp.color; 
+                ctx.globalAlpha = sp.alpha; 
+                ctx.beginPath(); 
+                ctx.arc((sp.x-camera.x)*camera.zoom, (sp.y-camera.y)*camera.zoom, sp.r*camera.zoom, 0, Math.PI*2); 
+                ctx.fill(); 
             });
-            ctx.globalAlpha = 1.0;
-
-            // Dibujar balas
-            bullets.forEach(bullet => {
-                const sx = (bullet.x - camera.x) * camera.zoom + canvas.width/2;
-                const sy = (bullet.y - camera.y) * camera.zoom + canvas.height/2;
-                const size = 8 * camera.zoom;
+            ctx.globalAlpha = 1;
+            
+            // Edificios
+            buildings.forEach(b => {
+                let sx = (b.x-camera.x)*camera.zoom, 
+                    sy = (b.y-camera.y)*camera.zoom, 
+                    sz = b.radius*2*camera.zoom;
                 
-                ctx.fillStyle = bullet.color;
-                ctx.beginPath();
-                ctx.arc(sx, sy, size, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.shadowBlur = 25; 
+                ctx.shadowColor = b.type === 'hospital' ? '#10b981' : 
+                                 (b.type === 'refuge' ? '#3b82f6' : '#fbbf24');
                 
-                // Efecto de rastro
-                ctx.strokeStyle = bullet.color;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(sx, sy);
-                ctx.lineTo(sx - Math.cos(bullet.angle) * size * 3, sy - Math.sin(bullet.angle) * size * 3);
-                ctx.stroke();
-            });
-
-            // Dibujar entidades (zombies)
-            entities.forEach(entity => {
-                if (entity.active) {
-                    entity.draw();
+                if (b.img && b.img.complete) {
+                    ctx.drawImage(b.img, sx-sz/2, sy-sz/2, sz, sz); 
+                } else {
+                    ctx.fillStyle = b.type === 'hospital' ? '#10b981' : 
+                                  (b.type === 'refuge' ? '#3b82f6' : '#fbbf24');
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, sz/2, 0, Math.PI*2);
+                    ctx.fill();
                 }
+                
+                ctx.shadowBlur = 0;
             });
-
-            // Dibujar jugador
-            if (player && player.active) {
-                player.draw();
-            }
+            
+            // Ítems
+            items.forEach(it => {
+                ctx.font = `${34 * camera.zoom}px Arial`; 
+                ctx.textAlign = 'center';
+                let icon = { 
+                    ammo: '🔫', 
+                    heart: '❤️', 
+                    helmet: '🪖', 
+                    motorcycle: '🏍️' 
+                }[it.type];
+                ctx.fillText(icon, (it.x-camera.x)*camera.zoom, (it.y-camera.y)*camera.zoom);
+            });
+            
+            // Portales
+            portals.forEach(p => {
+                let sx = (p.x-camera.x)*camera.zoom, 
+                    sy = (p.y-camera.y)*camera.zoom, 
+                    sz = 100*camera.zoom;
+                
+                ctx.shadowBlur = 20; 
+                ctx.shadowColor = '#a855f7'; 
+                ctx.fillStyle = '#6b21a8';
+                ctx.beginPath(); 
+                ctx.ellipse(sx, sy, sz/3, sz, Math.sin(Date.now()/300), 0, Math.PI*2); 
+                ctx.fill(); 
+                ctx.shadowBlur = 0;
+            });
+            
+            // Balas
+            bullets.forEach(b => { 
+                ctx.fillStyle = b.color; 
+                ctx.shadowBlur = 12; 
+                ctx.shadowColor = b.color; 
+                ctx.beginPath(); 
+                ctx.arc((b.x-camera.x)*camera.zoom, (b.y-camera.y)*camera.zoom, 8*camera.zoom, 0, Math.PI*2); 
+                ctx.fill(); 
+                ctx.shadowBlur = 0; 
+            });
+            
+            // Entidades locales
+            entities.forEach(e => e.draw()); 
+            player.draw();
+            
+            // Jugadores remotos
+            drawRemotePlayers();
         }
 
         function gameLoop() {
             if (isGameOver) return;
-            if (!isPaused) {
-                updateLogic();
-            }
+            if (!isPaused) updateLogic();
             draw();
             
-            // Actualizar contador de zombies
+            // Actualizar contadores
             const zombieCount = entities.filter(e => e.team === 'zombie' && e.active).length;
             document.getElementById('map-zombies-count').innerText = zombieCount;
             
             requestAnimationFrame(gameLoop);
         }
 
-        function quickSwapWeapon() {
-            const weaponKeys = Object.keys(WEAPONS);
-            const currentIndex = weaponKeys.indexOf(activeWKey);
-            const nextIndex = (currentIndex + 1) % weaponKeys.length;
-            activeWKey = weaponKeys[nextIndex];
+        function updateHUD() {
+            // Vidas
+            document.getElementById('lives-display').innerText = "❤️".repeat(player.lives);
             
-            const weapon = WEAPONS[activeWKey];
-            document.getElementById('weapon-icon-btn').textContent = weapon.icon;
-            document.getElementById('ammo-count').textContent = weapon.ammo ? weapon.ammo : '∞';
-            document.getElementById('ammo-count').style.backgroundColor = weapon.color;
+            // HP
+            const hpPercent = (player.hp/player.maxHp)*100;
+            document.getElementById('hp-bar').style.width = `${hpPercent}%`;
+            
+            // Puntuación
+            document.getElementById('score-val').innerText = score.toString().padStart(5, '0');
+            
+            // Nivel
+            document.getElementById('level-display').innerText = currentLvl.toString().padStart(2, '0');
+            
+            // Objetivos
+            document.getElementById('z-remain').innerText = `${kills}/${targetKills}`;
+            document.getElementById('objective-progress').style.width = `${(kills/targetKills)*100}%`;
+            
+            // Arma
+            document.getElementById('weapon-icon-btn').innerText = WEAPONS[activeWKey].icon;
+            document.getElementById('ammo-count').innerText = activeWKey === 'KNIFE' ? '∞' : WEAPONS[activeWKey].ammo;
+            
+            // Gasolina
+            const gbc = document.getElementById('gas-bar-cont');
+            if(player.onMotorcycle) { 
+                gbc.classList.remove('hidden'); 
+                document.getElementById('gas-bar').style.width = `${player.fuel}%`; 
+            } else gbc.classList.add('hidden');
         }
+
+        // ================= FUNCIONES GLOBALES =================
+        window.selectAvatar = (idx) => { 
+            selectedAvatarIdx = idx; 
+            document.querySelectorAll('.avatar-card').forEach((c, i) => 
+                c.classList.toggle('selected', i === idx)
+            ); 
+        };
+        
+        window.togglePause = () => { 
+            isPaused = !isPaused; 
+            document.getElementById('pause-btn').innerText = isPaused ? '▶️' : '⏸️'; 
+        };
+        
+        window.quickSwapWeapon = () => { 
+            let ks = Object.keys(WEAPONS); 
+            let i = ks.indexOf(activeWKey); 
+            activeWKey = ks[(i+1)%ks.length]; 
+            updateHUD(); 
+        };
+        
+        window.showStartScreen = () => {
+            document.getElementById('game-over').style.display = 'none';
+            document.getElementById('startup-screen').style.display = 'flex';
+        };
 
         async function endGame() {
-            isGameOver = true;
-            const name = document.getElementById('player-name-input').value.trim() || 'Jugador';
+            isGameOver = true; 
+            const n = document.getElementById('player-name-input').value;
+            
+            // Mostrar pantalla de fin
             document.getElementById('game-over').style.display = 'flex';
             document.getElementById('final-stats').innerHTML = 
-                `<div class="mb-2">AGENTE: ${name}</div>
-                 <div class="mb-2">NIVEL ALCANZADO: ${currentLvl}</div>
-                 <div class="mb-2">PUNTUACIÓN TOTAL: ${score}</div>
-                 <div>ZOMBIES ELIMINADOS: ${kills}</div>`;
+                `MISIÓN CUMPLIDA<br>
+                 Nivel alcanzado: <b class="text-blue-400">${currentLvl}</b><br>
+                 Puntuación final: <b class="text-green-400">${score}</b><br>
+                 Zombies eliminados: <b class="text-red-400">${kills}</b>`;
             
-            // Guardar en Firestore si el usuario está autenticado
-            if (currentUser && !isGuest) {
-                await saveGameToFirestore(currentLvl, score, kills);
-            } else {
-                // Guardar en cookies como respaldo
-                saveGameToCookie();
+            // Guardar puntuación
+            if (window.submitHighScore) {
+                await window.submitHighScore(n, score, currentLvl, selectedAvatarIdx);
             }
             
-            // Cargar ranking local
-            loadLocalLeaderboard();
+            // Cargar leaderboard
+            const lb = await window.getLeaderboard();
+            document.getElementById('leaderboard-list').innerHTML = lb.map((s, i) => `
+                <div class="flex justify-between items-center bg-white/5 p-3 rounded-lg text-xs hover:bg-white/10">
+                    <div class="flex items-center gap-3">
+                        <span class="font-bold ${i < 3 ? 'text-yellow-400' : 'text-gray-400'}">#${i+1}</span>
+                        <img src="${ASSETS_URLS.hero[s.avatarIdx || 0]}" class="w-6 h-6">
+                        <span class="font-bold">${s.name}</span>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-blue-400 font-bold">${s.score} pts</div>
+                        <div class="text-gray-500 text-[10px]">Nivel ${s.level}</div>
+                    </div>
+                </div>`).join('');
         }
 
-        function loadLocalLeaderboard() {
-            try {
-                const savedGames = JSON.parse(localStorage.getItem('zombieLeaderboard') || '[]');
-                savedGames.push({
-                    name: document.getElementById('player-name-input').value.trim() || 'Jugador',
-                    score: score,
-                    level: currentLvl,
-                    kills: kills,
-                    date: new Date().toLocaleDateString()
-                });
-                
-                // Ordenar por puntuación y mantener solo top 10
-                savedGames.sort((a, b) => b.score - a.score);
-                const top10 = savedGames.slice(0, 10);
-                localStorage.setItem('zombieLeaderboard', JSON.stringify(top10));
-                
-                // Mostrar en pantalla
-                let html = '';
-                top10.forEach((game, i) => {
-                    html += `<div class="flex justify-between text-sm py-1 ${i < 3 ? 'text-yellow-400' : 'text-gray-300'}">
-                        <span>${i + 1}. ${game.name}</span>
-                        <span>${game.score} pts (Nvl ${game.level})</span>
-                    </div>`;
-                });
-                document.getElementById('leaderboard-list').innerHTML = html;
-            } catch (e) {
-                console.error("Error al cargar ranking local:", e);
+        // ================= EVENTOS =================
+        window.onload = () => {
+            // Cargar imágenes
+            loadImages();
+            
+            // Ajustar canvas
+            canvas.width = window.innerWidth; 
+            canvas.height = window.innerHeight;
+            
+            // Mostrar pantalla inicial
+            document.getElementById('startup-screen').style.display = 'flex';
+            
+            // Verificar PWA
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+                console.log('[📱] Ejecutando como PWA');
             }
-        }
+        };
 
-        function updateHUD() {
-            // Actualizar HP
-            if (player) {
-                const hpPercent = (player.hp / player.maxHp) * 100;
-                document.getElementById('hp-bar').style.width = `${hpPercent}%`;
-                
-                // Actualizar vidas
-                let livesHTML = '';
-                for(let i = 0; i < player.lives; i++) {
-                    livesHTML += '❤️';
-                }
-                document.getElementById('lives-display').innerHTML = livesHTML;
-            }
-            
-            // Actualizar nivel
-            document.getElementById('level-display').textContent = currentLvl.toString().padStart(2, '0');
-            
-            // Actualizar progreso
-            const progressPercent = (kills / targetKills) * 100;
-            document.getElementById('objective-progress').style.width = `${progressPercent}%`;
-            document.getElementById('z-remain').textContent = `${kills}/${targetKills}`;
-            
-            // Actualizar puntuación
-            document.getElementById('score-val').textContent = score.toString().padStart(5, '0');
-            
-            // Actualizar munición
-            const weapon = WEAPONS[activeWKey];
-            document.getElementById('weapon-icon-btn').textContent = weapon.icon;
-            document.getElementById('ammo-count').textContent = weapon.ammo ? weapon.ammo : '∞';
-            document.getElementById('ammo-count').style.backgroundColor = weapon.color;
-        }
-
-        async function startGame(resume, mode) {
-            gameMode = mode;
-            const name = document.getElementById('player-name-input').value.trim();
-            if (!name) {
-                alert("Por favor ingresa un nombre para el agente");
-                return;
-            }
-            
-            document.getElementById('singleplayer-screen').style.display = 'none';
-            player = new Entity(0, 0, { 
-                type: 'human', 
-                isPlayer: true, 
-                hp: 250, 
-                speed: 8.5, 
-                team: 'human', 
-                lives: 3,
-                playerName: name,
-                avatarIdx: selectedAvatarIdx
-            });
-            
-            entities = []; 
-            bullets = []; 
-            splatters = [];
-            isGameOver = false; 
-            isPaused = false; 
-            score = 0; 
-            kills = 0;
-            
-            // Inicializar munición
-            WEAPONS.UZI.ammo = 200;
-            WEAPONS.PISTOL.ammo = 60;
-            
-            if (resume) {
-                if (currentUser && !isGuest) {
-                    // Cargar desde Firestore
-                    const savedGame = await loadUserSavedGames();
-                    if (savedGame) {
-                        currentLvl = savedGame.level;
-                        score = savedGame.score;
-                        kills = savedGame.kills;
-                        targetKills = 100 + (currentLvl - 1) * 100;
-                        selectedAvatarIdx = savedGame.avatarIndex || 0;
-                        if (savedGame.playerName) {
-                            document.getElementById('player-name-input').value = savedGame.playerName;
-                        }
-                    } else {
-                        currentLvl = 1;
-                        targetKills = 100;
-                    }
-                } else {
-                    // Cargar desde cookies
-                    const savedGame = loadGameFromCookie();
-                    if (savedGame) {
-                        currentLvl = savedGame.level;
-                        score = savedGame.score;
-                        kills = savedGame.kills;
-                        targetKills = savedGame.targetKills;
-                        selectedAvatarIdx = savedGame.avatarIndex || 0;
-                        if (savedGame.playerName) {
-                            document.getElementById('player-name-input').value = savedGame.playerName;
-                        }
-                    } else {
-                        currentLvl = 1;
-                        targetKills = 100;
-                    }
-                }
-            } else { 
-                currentLvl = 1; 
-                targetKills = 100; 
-            }
-            
-            // Mostrar botón de salida
-            document.getElementById('exit-btn').classList.remove('hidden');
-            
-            updateHUD(); 
-            requestAnimationFrame(gameLoop);
-        }
-
-        function startMultiplayerGame(mode) {
-            const name = document.getElementById('mp-player-name-input').value.trim();
-            if (!name) {
-                alert("Por favor ingresa tu nombre");
-                return;
-            }
-            
-            alert(`Modo ${mode} seleccionado. Esta función está en desarrollo.`);
-            showMainMenu();
-        }
-
-        function exitToMenu() {
-            // Guardar partida antes de salir
-            saveGameToCookie();
-            
-            // Guardar en Firestore si está autenticado
-            if (currentUser && !isGuest) {
-                saveGameToFirestore(currentLvl, score, kills);
-            }
-            
-            // Mostrar mensaje de confirmación
-            if (confirm("¿Salir al menú principal? La partida se guardará automáticamente.")) {
-                showMainMenu();
-                // Ocultar elementos de juego
-                document.getElementById('exit-btn').classList.add('hidden');
-                // Detener bucle de juego
-                isGameOver = true;
-            }
-        }
-
-        function togglePause() {
-            isPaused = !isPaused;
-            document.getElementById('pause-btn').textContent = isPaused ? '▶️' : '⏸️';
-        }
-
-        // =========== EVENT LISTENERS ===========
-        // Eventos táctiles para el botón de acción
-        const actionBtn = document.getElementById('action-btn');
-        if (actionBtn) {
-            actionBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                isFiring = true;
-            });
-            
-            actionBtn.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                isFiring = false;
-            });
-            
-            actionBtn.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                isFiring = true;
-            });
-            
-            actionBtn.addEventListener('mouseup', (e) => {
-                e.preventDefault();
-                isFiring = false;
-            });
-        }
-
-        // Eventos de movimiento táctil
+        // Eventos del botón de acción
+        const bAct = document.getElementById('action-btn');
+        const sFire = (e) => { 
+            isFiring = true; 
+            e.preventDefault(); 
+        };
+        const eFire = () => isFiring = false;
+        
+        bAct.addEventListener('touchstart', sFire); 
+        bAct.addEventListener('touchend', eFire);
+        bAct.addEventListener('mousedown', sFire); 
+        bAct.addEventListener('mouseup', eFire);
+        bAct.addEventListener('touchcancel', eFire);
+        
+        // Controles táctiles
         canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
             if (e.touches.length === 1) {
-                touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                touchStart = { 
+                    x: e.touches[0].clientX, 
+                    y: e.touches[0].clientY 
+                };
             } else if (e.touches.length === 2) {
                 pinchDist = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientX - e.touches[1].clientX, 
                     e.touches[0].clientY - e.touches[1].clientY
                 );
             }
         });
-
+        
         canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
             if (e.touches.length === 1 && touchStart) {
-                const touch = e.touches[0];
-                const dx = touch.clientX - touchStart.x;
-                const dy = touch.clientY - touchStart.y;
-                
-                // Normalizar el movimiento
-                const maxMove = 50;
-                touchMove.x = Math.max(-1, Math.min(1, dx / maxMove));
-                touchMove.y = Math.max(-1, Math.min(1, dy / maxMove));
-                
-                touchStart = { x: touch.clientX, y: touch.clientY };
+                const dx = e.touches[0].clientX - touchStart.x;
+                const dy = e.touches[0].clientY - touchStart.y;
+                const d = Math.hypot(dx, dy); 
+                if (d > 10) {
+                    const maxSpeed = 1.5;
+                    const speed = Math.min(d / 100, maxSpeed);
+                    touchMove = { 
+                        x: (dx/d) * speed, 
+                        y: (dy/d) * speed 
+                    };
+                }
             } else if (e.touches.length === 2 && pinchDist) {
-                const newPinchDist = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
+                const d = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX, 
                     e.touches[0].clientY - e.touches[1].clientY
                 );
-                
-                // Ajustar zoom
-                const zoomChange = (newPinchDist - pinchDist) * 0.01;
-                gameConfig.zoomLevel = Math.max(0.5, Math.min(2, gameConfig.zoomLevel + zoomChange));
-                camera.zoom = gameConfig.zoomLevel;
-                
-                pinchDist = newPinchDist;
+                camera.zoom = Math.max(0.4, Math.min(1.5, camera.zoom * (d/pinchDist)));
+                pinchDist = d;
             }
         });
-
-        canvas.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            if (e.touches.length === 0) {
-                touchMove = { x: 0, y: 0 };
-                touchStart = null;
-                pinchDist = null;
-            }
+        
+        canvas.addEventListener('touchend', () => { 
+            touchStart = null; 
+            touchMove = { x: 0, y: 0 }; 
+            pinchDist = null; 
         });
-
-        // Eventos de teclado para desarrollo
-        window.addEventListener('keydown', (e) => {
-            keys[e.key] = true;
+        
+        // Controles de teclado
+        window.onkeydown = (e) => {
+            const key = e.key.toLowerCase();
+            keys[key] = true;
             
-            // Teclas de desarrollo
-            if (e.key === ' ') { // Espacio para disparar
-                isFiring = true;
-            } else if (e.key === 'p' || e.key === 'P') { // P para pausa
-                togglePause();
-            } else if (e.key === 'w' || e.key === 'W') { // W para cambiar arma
-                quickSwapWeapon();
-            }
-        });
-
-        window.addEventListener('keyup', (e) => {
-            keys[e.key] = false;
-            if (e.key === ' ') {
-                isFiring = false;
-            }
-        });
-
-        // Ajustar tamaño del canvas al redimensionar ventana
+            // Pausa con ESC
+            if (key === 'escape') togglePause();
+            
+            // Cambiar arma con números
+            if (key === '1') activeWKey = 'KNIFE';
+            if (key === '2') activeWKey = 'PISTOL';
+            if (key === '3') activeWKey = 'PLASMA';
+            if (key === '4') activeWKey = 'ROCKET';
+            updateHUD();
+        };
+        
+        window.onkeyup = (e) => keys[e.key.toLowerCase()] = false;
+        
+        // Redimensionar ventana
         window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         });
-
-        // =========== INICIALIZACIÓN ===========
-        window.onload = async () => {
-            // Inicializar autenticación
-            auth.onAuthStateChanged(async (user) => {
-                if (user) {
-                    currentUser = user;
-                    isGuest = false;
-                    await createOrUpdateUserProfile();
-                    updateUserProfileUI();
-                    showMainMenu();
-                } else {
-                    // Mostrar pantalla de login si no hay usuario
-                    document.getElementById('login-screen').style.display = 'flex';
-                    document.getElementById('main-menu').style.display = 'none';
-                }
-            });
-            
-            // Cargar configuración guardada
-            const savedConfig = localStorage.getItem('zombieSurvivorConfig');
-            if (savedConfig) {
-                Object.assign(gameConfig, JSON.parse(savedConfig));
-                camera.zoom = gameConfig.zoomLevel;
-            }
-            
-            // Cargar imágenes
-            Object.keys(ASSETS_URLS).forEach(k => {
-                if (Array.isArray(ASSETS_URLS[k])) {
-                    images[k] = ASSETS_URLS[k].map(u => { 
-                        let i = new Image(); 
-                        i.src = u; 
-                        return i; 
-                    });
-                } else { 
-                    images[k] = new Image(); 
-                    images[k].src = ASSETS_URLS[k]; 
-                }
-            });
-            
-            canvas.width = window.innerWidth; 
-            canvas.height = window.innerHeight;
-            
-            // Configurar eventos de los sliders
-            document.getElementById('zombie-speed-slider').addEventListener('input', updateSliderValues);
-            document.getElementById('avatar-speed-slider').addEventListener('input', updateSliderValues);
-            document.getElementById('moto-speed-slider').addEventListener('input', updateSliderValues);
-            document.getElementById('bot-count-slider').addEventListener('input', updateSliderValues);
-            document.getElementById('zombie-size-slider').addEventListener('input', updateSliderValues);
-            document.getElementById('zoom-level-slider').addEventListener('input', updateSliderValues);
-            
-            // Actualizar selección de avatar inicial
-            updateAvatarSelection();
-            
-            console.log("Juego inicializado correctamente");
-        };
+        
+        // Prevenir menú contextual
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     </script>
 </body>
 </html>
