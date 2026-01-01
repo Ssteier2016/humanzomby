@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Reglas para el juego zombie-survivor-multiplayer
+    match /artifacts/zombie-survivor-multiplayer {
+      // Salas de juego
+      match /rooms/{roomId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null;
+        allow update: if request.auth != null && 
+          (request.auth.uid == resource.data.hostId || 
+           request.resource.data.players.hasAny([request.auth.uid]));
+        allow delete: if request.auth != null && 
+          request.auth.uid == resource.data.hostId;
+        
+        // Validar datos de la sala
+        function isValidRoom() {
+          return request.resource.data.code is string &&
+            request.resource.data.code.size() == 6 &&
+            request.resource.data.hostId is string &&
+            request.resource.data.players is list &&
+            request.resource.data.players.size() <= 4 &&
+            request.resource.data.gameState in ['waiting', 'playing', 'finished'] &&
+            request.resource.data.level is number &&
+            request.resource.data.kills is number &&
+            request.resource.data.targetKills is number;
+        }
+        
+        // Validar jugador
+        function isValidPlayer(player) {
+          return player.id is string &&
+            player.name is string &&
+            player.name.size() <= 12 &&
+            player.avatarIdx is number &&
+            player.color is string &&
+            player.isReady is bool &&
+            player.isAlive is bool &&
+            player.score is number &&
+            player.kills is number &&
+            player.hp is number &&
+            player.maxHp is number;
+        }
+        
+        allow write: if isValidRoom() && 
+          request.resource.data.players.all(p, isValidPlayer(p));
+      }
+      
+      // Datos de usuarios
+      match /users/{userId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == userId;
+        
+        match /saveData/{documentId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+      
+      // Leaderboard público
+      match /public/data/leaderboard/{userId} {
+        allow read: if true; // Público
+        allow write: if request.auth != null && request.auth.uid == userId;
+        
+        // Validar datos del scoreboard
+        function isValidScore() {
+          return request.resource.data.name is string &&
+            request.resource.data.score is number &&
+            request.resource.data.level is number &&
+            request.resource.data.avatarIdx is number &&
+            request.resource.data.timestamp is number;
+        }
+        
+        allow create, update: if isValidScore();
+      }
+    }
+  }
+}
