@@ -60,8 +60,6 @@
         .protected { background: #3b82f6; }
         .invisible-mod { background: #6366f1; }
         .soldier-mod { background: #fbbf24; color: black; }
-        .moto-mod { background: #ec4899; }
-        .flashlight-mod { background: #f59e0b; }
         
         .level-up-anim {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -85,119 +83,6 @@
             border-radius: 50%;
             background: #3b82f6;
             cursor: pointer;
-        }
-
-        .wall {
-            position: absolute;
-            background: #8B4513;
-            border: 2px solid #654321;
-            z-index: 5;
-        }
-
-        .maze-wall {
-            background: #2c3e50;
-            border: 2px solid #34495e;
-        }
-
-        .door {
-            background: #d4a574;
-            border: 3px solid #8B4513;
-        }
-
-        .construction-mode {
-            border: 3px solid #10b981 !important;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-
-        .torch-light {
-            position: absolute;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 1;
-            mix-blend-mode: screen;
-        }
-
-        .night-overlay {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0, 0, 20, 0.7);
-            z-index: 2;
-            pointer-events: none;
-            transition: background 2s ease;
-        }
-
-        .user-profile {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            z-index: 100;
-        }
-
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid #3b82f6;
-        }
-
-        .logout-btn {
-            background: rgba(239, 68, 68, 0.3);
-            border: 1px solid #ef4444;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-
-        .leaderboard-entry {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            margin-bottom: 4px;
-        }
-
-        .leaderboard-entry.current-user {
-            background: rgba(59, 130, 246, 0.2);
-            border: 1px solid #3b82f6;
-        }
-
-        .rank-badge {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 12px;
-        }
-
-        .rank-1 { background: gold; color: black; }
-        .rank-2 { background: silver; color: black; }
-        .rank-3 { background: #cd7f32; color: white; }
-        .rank-other { background: #4b5563; color: white; }
-        
-        /* Estilos adicionales para mejor visibilidad */
-        .zombie-glow {
-            filter: drop-shadow(0 0 10px rgba(255, 50, 50, 0.8));
-        }
-        
-        .player-glow {
-            filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.8));
         }
     </style>
 </head>
@@ -452,19 +337,12 @@
                 <div class="flex items-center gap-3">
                     <div id="lives-display" class="text-2xl drop-shadow-lg">❤️❤️❤️</div>
                     <button id="pause-btn" onclick="togglePause()" class="clickable bg-white/10 p-2 rounded-xl text-xl backdrop-blur-md border border-white/20">⏸️</button>
-                    <button id="build-btn" onclick="toggleBuildMode()" class="clickable bg-green-600/20 p-2 rounded-xl text-xl backdrop-blur-md border border-green-500/30 hidden">🏗️</button>
                     <button id="exit-btn" onclick="exitToMenu()" class="clickable bg-red-600/20 p-2 rounded-xl text-xl backdrop-blur-md border border-red-500/30 hidden">🚪</button>
                 </div>
                 <div id="hp-bar-cont" class="w-40 h-3 bg-gray-900/80 rounded-full border border-white/10 overflow-hidden mt-1">
                     <div id="hp-bar" class="h-full bg-red-500 transition-all"></div>
                 </div>
-                <div id="gas-bar-cont" class="w-32 h-2 bg-gray-900/80 rounded-full border border-white/10 overflow-hidden mt-1 hidden">
-                    <div id="gas-bar" class="h-full bg-yellow-500"></div>
-                </div>
                 <div id="status-container" class="flex flex-col items-start gap-1"></div>
-                <div id="time-indicator" class="text-xs text-yellow-400 mt-2 font-bold">
-                    <span id="time-of-day">🌅 Día</span>
-                </div>
             </div>
 
             <div class="flex flex-col items-end gap-2">
@@ -478,9 +356,6 @@
                     </button>
                     <div id="ammo-count" class="absolute -bottom-2 -left-2 bg-amber-500 text-black text-[10px] font-bold px-2 rounded-full border border-white shadow-md">∞</div>
                 </div>
-                <button onclick="toggleFlashlight()" id="flashlight-btn" class="clickable bg-gray-800 w-12 h-12 rounded-xl border-2 border-yellow-600/50 hidden flex items-center justify-center text-xl">
-                    🔦
-                </button>
             </div>
         </div>
 
@@ -497,14 +372,6 @@
                     <div class="mt-1 flex justify-between items-center border-t border-white/5 pt-1">
                         <span class="text-[8px] text-gray-400 font-bold uppercase">Horda Detectada:</span>
                         <span id="map-zombies-count" class="text-[10px] font-mono text-red-400 font-bold">0</span>
-                    </div>
-                </div>
-                <div id="construction-ui" class="hidden bg-black/60 p-3 rounded-2xl border border-green-500/30">
-                    <div class="text-[10px] text-green-400 font-bold uppercase mb-2">MODO CONSTRUCCIÓN</div>
-                    <div class="flex gap-2">
-                        <button onclick="placeWall()" class="clickable bg-slate-800 p-2 rounded-lg text-xs">🧱 Muro</button>
-                        <button onclick="placeDoor()" class="clickable bg-slate-800 p-2 rounded-lg text-xs">🚪 Puerta</button>
-                        <button onclick="placeTorch()" class="clickable bg-slate-800 p-2 rounded-lg text-xs">🔥 Antorcha</button>
                     </div>
                 </div>
             </div>
@@ -528,12 +395,6 @@
         </div>
         <button onclick="showMainMenu()" class="bg-white text-black font-black py-5 px-16 rounded-2xl text-xl font-game shadow-2xl">MENÚ PRINCIPAL</button>
     </div>
-
-    <!-- Capa de iluminación y noche -->
-    <div id="night-overlay" class="night-overlay"></div>
-    
-    <!-- Elementos de luz dinámicos -->
-    <div id="light-container"></div>
 
     <canvas id="gameCanvas"></canvas>
 
@@ -783,35 +644,6 @@
             return null;
         }
 
-        async function saveUserConfiguration() {
-            if (!currentUser || isGuest) return;
-            
-            try {
-                const userRef = db.collection('users').doc(currentUser.uid);
-                await userRef.update({
-                    gameConfig: gameConfig,
-                    lastConfigUpdate: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                console.log("Configuración guardada en Firestore");
-            } catch (error) {
-                console.error("Error al guardar configuración:", error);
-            }
-        }
-
-        async function loadUserConfiguration() {
-            if (!currentUser || isGuest) return;
-            
-            try {
-                const userDoc = await db.collection('users').doc(currentUser.uid).get();
-                if (userDoc.exists && userDoc.data().gameConfig) {
-                    Object.assign(gameConfig, userDoc.data().gameConfig);
-                    console.log("Configuración cargada desde Firestore");
-                }
-            } catch (error) {
-                console.error("Error al cargar configuración:", error);
-            }
-        }
-
         // =========== CONFIGURACIÓN DEL JUEGO ===========
         const gameConfig = {
             zombieSpeed: 1.0,
@@ -828,79 +660,52 @@
         const WEAPONS = {
             KNIFE: { id: 'KNIFE', icon: '🔪', range: 130, damage: 400, delay: 250, color: '#94a3b8' },
             PISTOL: { id: 'PISTOL', icon: '🔫', speed: 28, damage: 150, delay: 200, color: '#fbbf24', ammo: 60 },
-            UZI: { id: 'UZI', icon: '🔫', speed: 35, damage: 80, delay: 50, color: '#22d3ee', ammo: 200, burst: true },
-            PLASMA: { id: 'PLASMA', icon: '🔥', speed: 35, damage: 120, delay: 80, color: '#22d3ee', ammo: 150 },
-            ROCKET: { id: 'ROCKET', icon: '🚀', speed: 22, damage: 1500, delay: 1500, color: '#f87171', ammo: 15, explosive: true }
+            UZI: { id: 'UZI', icon: '🔫', speed: 35, damage: 80, delay: 50, color: '#22d3ee', ammo: 200, burst: true }
         };
 
         // =========== DEFINICIÓN DE ZOMBIES ===========
-        // Usamos imágenes en lugar de videos para los zombies
+        // Usamos imágenes simples para los zombies
         const ZOMBIE_IMAGES = [
             'https://cdn-icons-png.flaticon.com/512/2742/2742018.png',
             'https://cdn-icons-png.flaticon.com/512/2742/2742019.png',
             'https://cdn-icons-png.flaticon.com/512/2742/2742020.png',
-            'https://cdn-icons-png.flaticon.com/512/2742/2742021.png',
-            'https://cdn-icons-png.flaticon.com/512/2742/2742022.png',
-            'https://cdn-icons-png.flaticon.com/512/2742/2742023.png',
-            'https://cdn-icons-png.flaticon.com/512/2742/2742024.png',
-            'https://cdn-icons-png.flaticon.com/512/2742/2742025.png',
-            'https://cdn-icons-png.flaticon.com/512/2742/2742026.png',
-            'https://cdn-icons-png.flaticon.com/512/2742/2742027.png'
+            'https://cdn-icons-png.flaticon.com/512/2742/2742021.png'
         ];
 
-        const ZOMBIE_TYPES = Array.from({ length: 10 }, (_, i) => {
+        const ZOMBIE_TYPES = Array.from({ length: 4 }, (_, i) => {
             const index = i + 1;
             return {
                 id: index,
                 imageSrc: ZOMBIE_IMAGES[i % ZOMBIE_IMAGES.length],
-                radius: (35 + (i * 12)) * 1.15,
-                hp: 150 * Math.pow(1.85, i),
-                speed: 3.2 - (i * 0.28),
-                damage: 5 + (i * 4),
+                radius: (35 + (i * 8)) * 1.15,
+                hp: 100 * Math.pow(1.5, i),
+                speed: 3.0 - (i * 0.2),
+                damage: 5 + (i * 3),
                 scoreValue: 500 * index,
-                color: `hsl(${140 - (i * 14)}, 100%, 50%)`
+                color: `hsl(${140 - (i * 20)}, 100%, 50%)`
             };
         });
 
         // =========== ASSETS ===========
         const ASSETS_URLS = {
-            hospital: 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png',
-            refuge: 'https://cdn-icons-png.flaticon.com/512/2590/2590525.png',
-            gasStation: 'https://cdn-icons-png.flaticon.com/512/1066/1066744.png',
             hero: [
                 'https://cdn-icons-png.flaticon.com/512/3408/3408545.png',
                 'https://cdn-icons-png.flaticon.com/512/4140/4140037.png',
                 'https://cdn-icons-png.flaticon.com/512/1154/1154443.png',
                 'https://cdn-icons-png.flaticon.com/512/606/606553.png'
             ],
-            bot: 'https://cdn-icons-png.flaticon.com/512/1067/1067357.png',
-            tree: 'https://cdn-icons-png.flaticon.com/512/1940/1940922.png'
+            bot: 'https://cdn-icons-png.flaticon.com/512/1067/1067357.png'
         };
 
         // =========== VARIABLES GLOBALES DEL JUEGO ===========
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         let images = {};
-        let zombieImages = [];
-        let player, entities = [], bullets = [], buildings = [], splatters = [], items = [], portals = [];
-        let walls = [], mazes = [], doors = [], torches = [], trees = [];
+        let player, entities = [], bullets = [], splatters = [];
         let camera = { x: 0, y: 0, zoom: 0.85 };
         let keys = {}, touchMove = { x: 0, y: 0 }, touchStart = null, pinchDist = null;
         let isGameOver = false, isPaused = false, score = 0, kills = 0, targetKills = 100, currentLvl = 1;
         let activeWKey = 'KNIFE', selectedAvatarIdx = 0, isFiring = false, lastFire = 0;
-        let buildMode = false;
-        let multiplayerPlayers = [];
-        let gameMode = 'single';
-        
-        // Variables para iluminación y noche
-        let hasFlashlight = false;
-        let isFlashlightOn = false;
-        let flashlightRange = 400;
-        let gameTime = 0;
-        let isNight = false;
-        let nightTransition = 0;
-        let treeFireDuration = 0;
-        let lightElements = [];
 
         // =========== FUNCIONES DE INTERFAZ ===========
         function showMainMenu() {
@@ -982,11 +787,6 @@
             // Guardar en localStorage
             localStorage.setItem('zombieSurvivorConfig', JSON.stringify(gameConfig));
             
-            // Guardar en Firestore si está autenticado
-            if (currentUser && !isGuest) {
-                saveUserConfiguration();
-            }
-            
             showMainMenu();
         }
 
@@ -1052,12 +852,11 @@
         // =========== CLASE ENTITY ===========
         class Entity {
             constructor(x, y, config) {
-                this.id = config.id || Math.random().toString(36).substr(2, 9);
-                this.x = x; this.y = y;
+                this.x = x; 
+                this.y = y;
                 this.type = config.type; 
                 this.zombieTypeId = config.zombieTypeId || null;
                 this.isPlayer = config.isPlayer || false;
-                this.isMultiplayerPlayer = config.isMultiplayerPlayer || false;
                 this.isBot = config.isBot || false;
                 this.team = config.team || 'zombie';
                 
@@ -1077,9 +876,6 @@
                 this.lives = config.lives || 3;
                 this.lastShot = 0;
                 this.hasHelmet = false;
-                this.onMotorcycle = false;
-                this.fuel = 0;
-                this.isInvisible = false;
                 this.playerName = config.playerName || 'Player';
                 this.avatarIdx = config.avatarIdx || 0;
                 
@@ -1088,194 +884,22 @@
                     this.image = new Image();
                     const zombieType = ZOMBIE_TYPES.find(z => z.id === this.zombieTypeId);
                     this.image.src = zombieType ? zombieType.imageSrc : ZOMBIE_IMAGES[0];
-                    this.image.onload = () => {
-                        this.imageLoaded = true;
-                    };
                 }
             }
 
             update() {
                 if (this.invul > 0) this.invul--;
-                if (this.isPlayer || this.isMultiplayerPlayer) { 
-                    this.checkBuildings(); this.checkItems(); this.checkPortals(); this.autoAim(); 
-                    if(this.onMotorcycle) { 
-                        this.speed = this.baseSpeed * 3 * gameConfig.motoSpeed;
-                        this.fuel -= 0.18; 
-                        if(this.fuel <= 0) {
-                            this.onMotorcycle = false;
-                            this.speed = this.baseSpeed * gameConfig.avatarSpeed;
-                        }
-                    } else {
-                        this.speed = this.baseSpeed * gameConfig.avatarSpeed;
-                    }
-                    
+                
+                if (this.isPlayer) { 
                     // Actualizar ángulo basado en movimiento táctil
                     if (touchMove.x || touchMove.y) {
                         this.angle = Math.atan2(touchMove.y, touchMove.x);
                     }
                 }
-                if (this.isBot) this.aiBot();
+                
                 if (this.team === 'zombie') { 
-                    this.speed = this.baseSpeed * gameConfig.zombieSpeed;
-                    this.handleSeparation(); this.aiZombie(); 
-                }
-            }
-
-            checkItems() {
-                items.forEach((it, i) => {
-                    if (Math.hypot(this.x - it.x, this.y - it.y) < this.radius + 40) {
-                        if (it.type === 'helmet' && !this.hasHelmet) {
-                            this.hasHelmet = true; this.maxHp *= 1.25; this.hp = this.maxHp;
-                        } else if (it.type === 'heart') {
-                            this.hp = Math.min(this.maxHp, this.hp + 60);
-                        } else if (it.type === 'ammo') {
-                            Object.keys(WEAPONS).forEach(k => { if(WEAPONS[k].ammo) WEAPONS[k].ammo += 50; });
-                        } else if (it.type === 'motorcycle' && !this.onMotorcycle) {
-                            this.onMotorcycle = true; this.fuel = 100;
-                        } else if (it.type === 'uzi') {
-                            WEAPONS.UZI.ammo += 100;
-                        } else if (it.type === 'flashlight' && !hasFlashlight) {
-                            hasFlashlight = true;
-                            document.getElementById('flashlight-btn').classList.remove('hidden');
-                            updateStatus();
-                        }
-                        items.splice(i, 1);
-                        if (this.isPlayer) updateHUD();
-                    }
-                });
-            }
-
-            checkBuildings() {
-                let statusHTML = '';
-                let inRefuge = false;
-                buildings.forEach(b => {
-                    let d = Math.hypot(this.x - b.x, this.y - b.y);
-                    if (d < b.radius + 50) {
-                        if (b.type === 'hospital' && this.hp < this.maxHp) {
-                            this.hp += 0.9; statusHTML += '<div class="status-badge healing">Regenerando HP</div>';
-                        }
-                        if (b.type === 'refuge') {
-                            inRefuge = true; this.invul = Math.max(this.invul, 10);
-                            statusHTML += '<div class="status-badge invisible-mod">Sigilo Activo</div>';
-                        }
-                        if (b.type === 'gasStation' && this.onMotorcycle) {
-                            this.fuel = Math.min(100, this.fuel + 1.5);
-                            statusHTML += '<div class="status-badge protected">Cargando Nafta... ⛽</div>';
-                        }
-                    }
-                });
-                this.isInvisible = inRefuge;
-                if (this.hasHelmet) statusHTML += '<div class="status-badge soldier-mod">Casco Blindado 🪖</div>';
-                if (this.onMotorcycle) statusHTML += '<div class="status-badge moto-mod">Moto Lista 🏍️</div>';
-                if (hasFlashlight && isFlashlightOn) statusHTML += '<div class="status-badge flashlight-mod">Linterna 🔦</div>';
-                
-                if (this.isPlayer) {
-                    document.getElementById('status-container').innerHTML = statusHTML;
-                }
-            }
-
-            autoAim() {
-                // Si hay movimiento táctil, usar esa dirección
-                if (touchMove.x || touchMove.y) {
-                    this.angle = Math.atan2(touchMove.y, touchMove.x);
-                    return;
-                }
-                
-                // Sino, apuntar automáticamente al zombie más cercano
-                let target = null, minDist = 1100;
-                entities.forEach(e => {
-                    if (e.active && e.team === 'zombie') {
-                        let d = Math.hypot(e.x - this.x, e.y - this.y);
-                        if (d < minDist) { minDist = d; target = e; }
-                    }
-                });
-                if (target) this.angle = Math.atan2(target.y - this.y, target.x - this.x);
-            }
-
-            aiBot() {
-                // Lógica simple para bots
-                let target = null, minDist = Infinity;
-                entities.forEach(e => {
-                    if (e.active && e.team === 'zombie') {
-                        let d = Math.hypot(e.x - this.x, e.y - this.y);
-                        if (d < minDist) { minDist = d; target = e; }
-                    }
-                });
-                
-                if (target) {
-                    this.angle = Math.atan2(target.y - this.y, target.x - this.x);
-                    const dx = Math.cos(this.angle) * this.speed;
-                    const dy = Math.sin(this.angle) * this.speed;
-                    
-                    // Verificar colisiones con muros
-                    let canMove = true;
-                    walls.forEach(w => {
-                        if (this.x + dx > w.x - w.width/2 && this.x + dx < w.x + w.width/2 &&
-                            this.y + dy > w.y - w.height/2 && this.y + dy < w.y + w.height/2) {
-                            canMove = false;
-                        }
-                    });
-                    
-                    if (canMove) {
-                        this.x += dx;
-                        this.y += dy;
-                    }
-                    
-                    // Disparar
-                    if (minDist < 300 && Date.now() - this.lastShot > 500) {
-                        this.lastShot = Date.now();
-                        fireBullet(this.x, this.y, this.angle, 'PISTOL', false);
-                    }
-                }
-            }
-
-            aiZombie() {
-                // Encontrar objetivo más cercano
-                let target = null, minDist = Infinity;
-                entities.forEach(e => {
-                    if (e.active && (e.team === 'human' || e.isPlayer)) {
-                        let d = Math.hypot(e.x - this.x, e.y - this.y);
-                        if (d < minDist) { minDist = d; target = e; }
-                    }
-                });
-                
-                if (target) {
-                    this.angle = Math.atan2(target.y - this.y, target.x - this.x);
-                    const dx = Math.cos(this.angle) * this.speed;
-                    const dy = Math.sin(this.angle) * this.speed;
-                    
-                    // Verificar colisiones con muros
-                    let canMove = true;
-                    walls.forEach(w => {
-                        if (this.x + dx > w.x - w.width/2 && this.x + dx < w.x + w.width/2 &&
-                            this.y + dy > w.y - w.height/2 && this.y + dy < w.y + w.height/2) {
-                            canMove = false;
-                        }
-                    });
-                    
-                    if (canMove) {
-                        this.x += dx;
-                        this.y += dy;
-                    }
-                    
-                    // Atacar si está cerca
-                    if (minDist < this.radius + target.radius + 10) {
-                        target.hp -= this.damage;
-                        if (target.hp <= 0) {
-                            target.active = false;
-                            if (target.isPlayer) {
-                                target.lives--;
-                                if (target.lives <= 0) {
-                                    endGame();
-                                } else {
-                                    target.hp = target.maxHp;
-                                    target.x = 0;
-                                    target.y = 0;
-                                    target.invul = 180; // 3 segundos de invulnerabilidad
-                                }
-                            }
-                        }
-                    }
+                    this.handleSeparation(); 
+                    this.aiZombie(); 
                 }
             }
 
@@ -1295,6 +919,27 @@
                         }
                     }
                 });
+            }
+
+            aiZombie() {
+                // Encontrar objetivo más cercano (jugador)
+                if (!player || !player.active) return;
+                
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const dist = Math.hypot(dx, dy);
+                
+                // Actualizar ángulo hacia el jugador
+                this.angle = Math.atan2(dy, dx);
+                
+                // Mover hacia el jugador
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+                
+                // Atacar si está cerca
+                if (dist < this.radius + player.radius + 10) {
+                    player.takeDamage(this.damage);
+                }
             }
 
             takeDamage(damage) {
@@ -1437,23 +1082,6 @@
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'bottom';
                     ctx.fillText(this.playerName, 0, -size/2 - 5);
-                } else if (this.isBot) {
-                    // Dibujar bot
-                    if (images.bot && images.bot.complete) {
-                        ctx.drawImage(images.bot, -size/2, -size/2, size, size);
-                    } else {
-                        ctx.fillStyle = '#10b981';
-                        ctx.beginPath();
-                        ctx.arc(0, 0, size/2, 0, Math.PI * 2);
-                        ctx.fill();
-                        
-                        // Indicador "BOT"
-                        ctx.fillStyle = 'white';
-                        ctx.font = `${10 * camera.zoom}px Arial`;
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText('BOT', 0, 0);
-                    }
                 }
                 
                 // Restaurar contexto
@@ -1476,232 +1104,23 @@
             }
         }
 
-        async function startGame(resume, mode) {
-            gameMode = mode;
-            const name = document.getElementById('player-name-input').value.trim();
-            if (!name) {
-                alert("Por favor ingresa un nombre para el agente");
-                return;
-            }
+        function spawnZombie() {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 800 + Math.random() * 400;
+            const x = player.x + Math.cos(angle) * distance;
+            const y = player.y + Math.sin(angle) * distance;
             
-            document.getElementById('singleplayer-screen').style.display = 'none';
-            player = new Entity(0, 0, { 
-                type: 'human', 
-                isPlayer: true, 
-                hp: 250, 
-                speed: 8.5, 
-                team: 'human', 
-                lives: 3,
-                playerName: name,
-                avatarIdx: selectedAvatarIdx
-            });
-            
-            entities = []; bullets = []; buildings = []; splatters = []; items = []; portals = [];
-            walls = []; mazes = []; doors = []; torches = []; trees = [];
-            isGameOver = false; isPaused = false; score = 0; kills = 0;
-            buildMode = false;
-            hasFlashlight = false;
-            isFlashlightOn = false;
-            gameTime = 0;
-            
-            // Inicializar munición UZI
-            WEAPONS.UZI.ammo = 200;
-            
-            if (resume) {
-                if (currentUser && !isGuest) {
-                    // Cargar desde Firestore
-                    const savedGame = await loadUserSavedGames();
-                    if (savedGame) {
-                        currentLvl = savedGame.level;
-                        score = savedGame.score;
-                        kills = savedGame.kills;
-                        targetKills = 100 + (currentLvl - 1) * 100;
-                        selectedAvatarIdx = savedGame.avatarIndex || 0;
-                        if (savedGame.playerName) {
-                            document.getElementById('player-name-input').value = savedGame.playerName;
-                        }
-                    } else {
-                        currentLvl = 1;
-                        targetKills = 100;
-                    }
-                } else {
-                    // Cargar desde cookies
-                    const savedGame = loadGameFromCookie();
-                    if (savedGame) {
-                        currentLvl = savedGame.level;
-                        score = savedGame.score;
-                        kills = savedGame.kills;
-                        targetKills = savedGame.targetKills;
-                        selectedAvatarIdx = savedGame.avatarIndex || 0;
-                        if (savedGame.playerName) {
-                            document.getElementById('player-name-input').value = savedGame.playerName;
-                        }
-                    } else {
-                        currentLvl = 1;
-                        targetKills = 100;
-                    }
-                }
-            } else { 
-                currentLvl = 1; 
-                targetKills = 100; 
-            }
-            
-            // Cargar imágenes de zombies
-            ZOMBIE_TYPES.forEach(zombieType => {
-                const img = new Image();
-                img.src = zombieType.imageSrc;
-                zombieImages[zombieType.id] = img;
-            });
-            
-            // Generar laberintos
-            generateMaze();
-            
-            // Spawnear algunos muros iniciales
-            for(let i = 0; i < 10; i++) {
-                walls.push({
-                    x: (Math.random()-0.5) * 3000,
-                    y: (Math.random()-0.5) * 3000,
-                    width: 80 + Math.random() * 40,
-                    height: 80 + Math.random() * 40,
-                    hp: 500,
-                    maxHp: 500
-                });
-            }
-            
-            // Spawnear árboles
-            for(let i = 0; i < 20; i++) {
-                spawnTree(
-                    (Math.random()-0.5) * 4000,
-                    (Math.random()-0.5) * 4000
-                );
-            }
-            
-            // Spawnear bots según configuración
-            for(let i = 0; i < gameConfig.botCount; i++) {
-                entities.push(new Entity(
-                    (Math.random()-0.5) * 1000,
-                    (Math.random()-0.5) * 1000,
-                    { 
-                        type: 'human', 
-                        isBot: true, 
-                        hp: 180, 
-                        speed: 6, 
-                        team: 'human',
-                        color: '#10b981'
-                    }
-                ));
-            }
-            
-            // Mostrar botones de juego
-            document.getElementById('build-btn').classList.remove('hidden');
-            document.getElementById('exit-btn').classList.remove('hidden');
-            document.getElementById('flashlight-btn').classList.add('hidden');
-            
-            updateHUD(); 
-            requestAnimationFrame(gameLoop);
-        }
-
-        function startMultiplayerGame(mode) {
-            const name = document.getElementById('mp-player-name-input').value.trim();
-            if (!name) {
-                alert("Por favor ingresa tu nombre");
-                return;
-            }
-            
-            alert(`Modo ${mode} seleccionado. Esta función está en desarrollo.`);
-            showMainMenu();
-        }
-
-        function exitToMenu() {
-            // Guardar partida antes de salir
-            saveGameToCookie();
-            
-            // Guardar en Firestore si está autenticado
-            if (currentUser && !isGuest) {
-                saveGameToFirestore(currentLvl, score, kills);
-            }
-            
-            // Mostrar mensaje de confirmación
-            if (confirm("¿Salir al menú principal? La partida se guardará automáticamente.")) {
-                showMainMenu();
-                // Ocultar elementos de juego
-                document.getElementById('build-btn').classList.add('hidden');
-                document.getElementById('exit-btn').classList.add('hidden');
-                document.getElementById('flashlight-btn').classList.add('hidden');
-                // Detener bucle de juego
-                isGameOver = true;
-            }
-        }
-
-        function togglePause() {
-            isPaused = !isPaused;
-            document.getElementById('pause-btn').textContent = isPaused ? '▶️' : '⏸️';
-        }
-
-        function toggleBuildMode() {
-            buildMode = !buildMode;
-            document.getElementById('construction-ui').classList.toggle('hidden', !buildMode);
-            document.getElementById('build-btn').classList.toggle('construction-mode', buildMode);
-        }
-
-        function placeWall() {
-            if (!buildMode) return;
-            
-            const wallX = player.x + Math.cos(player.angle) * 80;
-            const wallY = player.y + Math.sin(player.angle) * 80;
-            
-            walls.push({
-                x: wallX,
-                y: wallY,
-                width: 80,
-                height: 80,
-                hp: 500,
-                maxHp: 500
-            });
-        }
-
-        function placeDoor() {
-            if (!buildMode) return;
-            
-            const doorX = player.x + Math.cos(player.angle) * 80;
-            const doorY = player.y + Math.sin(player.angle) * 80;
-            
-            doors.push({
-                x: doorX,
-                y: doorY,
-                width: 60,
-                height: 20,
-                hp: 300,
-                maxHp: 300
-            });
-        }
-
-        function placeTorch() {
-            if (!buildMode) return;
-            
-            const torchX = player.x + Math.cos(player.angle) * 80;
-            const torchY = player.y + Math.sin(player.angle) * 80;
-            
-            torches.push({
-                x: torchX,
-                y: torchY,
-                radius: 200,
-                active: true,
-                hp: 1000,
-                maxHp: 1000,
-                placedOnWall: false
-            });
-        }
-
-        function spawnTree(x, y) {
-            trees.push({
-                x: x,
-                y: y,
-                radius: 60 + Math.random() * 40,
-                onFire: false,
-                fireDuration: 0,
-                maxFireDuration: 300
-            });
+            const zombieType = ZOMBIE_TYPES[Math.floor(Math.random() * Math.min(currentLvl, ZOMBIE_TYPES.length))];
+            entities.push(new Entity(x, y, {
+                type: 'zombie',
+                team: 'zombie',
+                zombieTypeId: zombieType.id,
+                radius: zombieType.radius,
+                hp: zombieType.hp,
+                speed: zombieType.speed,
+                damage: zombieType.damage,
+                color: zombieType.color
+            }));
         }
 
         function fireBullet(x, y, angle, weaponKey, isPlayer) {
@@ -1722,38 +1141,24 @@
                 range: weapon.range || 1000,
                 damage: weapon.damage,
                 color: weapon.color,
-                explosive: weapon.explosive || false,
                 owner: isPlayer ? 'player' : 'bot',
                 life: 100
             });
         }
 
         function updateLogic() {
-            if (isPaused || isGameOver) return;
+            if (isPaused || isGameOver || !player) return;
             
             // Actualizar jugador
-            if (player && player.active) {
-                player.update();
-                
+            if (player.active) {
                 // Mover jugador basado en touch input
                 if (touchMove.x || touchMove.y) {
                     const speed = player.speed;
                     const dx = touchMove.x * speed;
                     const dy = touchMove.y * speed;
                     
-                    // Verificar colisiones con muros
-                    let canMove = true;
-                    walls.forEach(w => {
-                        if (player.x + dx > w.x - w.width/2 && player.x + dx < w.x + w.width/2 &&
-                            player.y + dy > w.y - w.height/2 && player.y + dy < w.y + w.height/2) {
-                            canMove = false;
-                        }
-                    });
-                    
-                    if (canMove) {
-                        player.x += dx;
-                        player.y += dy;
-                    }
+                    player.x += dx;
+                    player.y += dy;
                 }
                 
                 // Actualizar cámara para seguir al jugador
@@ -1784,28 +1189,6 @@
                         if (e.active && e.team === 'zombie' && Math.hypot(b.x - e.x, b.y - e.y) < e.radius) {
                             e.takeDamage(b.damage);
                             b.life = 0;
-                            
-                            // Efecto explosivo
-                            if (b.explosive) {
-                                entities.forEach(z => {
-                                    if (z.active && z.team === 'zombie' && Math.hypot(b.x - z.x, b.y - z.y) < 150) {
-                                        z.takeDamage(b.damage * 0.5);
-                                    }
-                                });
-                            }
-                        }
-                    });
-                    
-                    // Verificar colisiones con muros
-                    walls.forEach(w => {
-                        if (b.x > w.x - w.width/2 && b.x < w.x + w.width/2 &&
-                            b.y > w.y - w.height/2 && b.y < w.y + w.height/2) {
-                            b.life = 0;
-                            w.hp -= b.damage * 0.1;
-                            if (w.hp <= 0) {
-                                const wallIndex = walls.indexOf(w);
-                                if (wallIndex > -1) walls.splice(wallIndex, 1);
-                            }
                         }
                     });
                     
@@ -1816,23 +1199,8 @@
             });
             
             // Spawnear zombies
-            if (entities.filter(e => e.team === 'zombie' && e.active).length < 30) {
-                const angle = Math.random() * Math.PI * 2;
-                const distance = 800 + Math.random() * 400;
-                const x = player.x + Math.cos(angle) * distance;
-                const y = player.y + Math.sin(angle) * distance;
-                
-                const zombieType = ZOMBIE_TYPES[Math.floor(Math.random() * Math.min(currentLvl, ZOMBIE_TYPES.length))];
-                entities.push(new Entity(x, y, {
-                    type: 'zombie',
-                    team: 'zombie',
-                    zombieTypeId: zombieType.id,
-                    radius: zombieType.radius,
-                    hp: zombieType.hp,
-                    speed: zombieType.speed,
-                    damage: zombieType.damage,
-                    color: zombieType.color
-                }));
+            if (entities.filter(e => e.team === 'zombie' && e.active).length < 15) {
+                spawnZombie();
             }
             
             // Actualizar salpicaduras
@@ -1847,9 +1215,6 @@
             if (kills >= targetKills) {
                 levelUp();
             }
-            
-            // Actualizar tiempo de juego
-            gameTime += 1/60;
         }
 
         function levelUp() {
@@ -1878,6 +1243,104 @@
             }
             
             updateHUD();
+        }
+
+        function draw() {
+            // Limpiar canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Fondo
+            ctx.fillStyle = '#020408';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+            let s = 150 * camera.zoom;
+            for(let x=(-camera.x*camera.zoom)%s; x<canvas.width; x+=s){ 
+                ctx.beginPath(); 
+                ctx.moveTo(x,0); 
+                ctx.lineTo(x,canvas.height); 
+                ctx.stroke(); 
+            }
+            for(let y=(-camera.y*camera.zoom)%s; y<canvas.height; y+=s){ 
+                ctx.beginPath(); 
+                ctx.moveTo(0,y); 
+                ctx.lineTo(canvas.width,y); 
+                ctx.stroke(); 
+            }
+
+            // Dibujar salpicaduras
+            splatters.forEach(s => {
+                ctx.globalAlpha = s.alpha * (s.life / 60);
+                ctx.fillStyle = s.color;
+                ctx.beginPath();
+                ctx.arc(
+                    (s.x - camera.x) * camera.zoom + canvas.width/2,
+                    (s.y - camera.y) * camera.zoom + canvas.height/2,
+                    s.radius * camera.zoom,
+                    0, Math.PI * 2
+                );
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+
+            // Dibujar balas
+            bullets.forEach(bullet => {
+                const sx = (bullet.x - camera.x) * camera.zoom + canvas.width/2;
+                const sy = (bullet.y - camera.y) * camera.zoom + canvas.height/2;
+                const size = 8 * camera.zoom;
+                
+                ctx.fillStyle = bullet.color;
+                ctx.beginPath();
+                ctx.arc(sx, sy, size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Efecto de rastro
+                ctx.strokeStyle = bullet.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(sx, sy);
+                ctx.lineTo(sx - Math.cos(bullet.angle) * size * 3, sy - Math.sin(bullet.angle) * size * 3);
+                ctx.stroke();
+            });
+
+            // Dibujar entidades (zombies)
+            entities.forEach(entity => {
+                if (entity.active) {
+                    entity.draw();
+                }
+            });
+
+            // Dibujar jugador
+            if (player && player.active) {
+                player.draw();
+            }
+        }
+
+        function gameLoop() {
+            if (isGameOver) return;
+            if (!isPaused) {
+                updateLogic();
+            }
+            draw();
+            
+            // Actualizar contador de zombies
+            const zombieCount = entities.filter(e => e.team === 'zombie' && e.active).length;
+            document.getElementById('map-zombies-count').innerText = zombieCount;
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function quickSwapWeapon() {
+            const weaponKeys = Object.keys(WEAPONS);
+            const currentIndex = weaponKeys.indexOf(activeWKey);
+            const nextIndex = (currentIndex + 1) % weaponKeys.length;
+            activeWKey = weaponKeys[nextIndex];
+            
+            const weapon = WEAPONS[activeWKey];
+            document.getElementById('weapon-icon-btn').textContent = weapon.icon;
+            document.getElementById('ammo-count').textContent = weapon.ammo ? weapon.ammo : '∞';
+            document.getElementById('ammo-count').style.backgroundColor = weapon.color;
         }
 
         async function endGame() {
@@ -1944,15 +1407,6 @@
                     livesHTML += '❤️';
                 }
                 document.getElementById('lives-display').innerHTML = livesHTML;
-                
-                // Actualizar gasolina
-                if (player.onMotorcycle) {
-                    document.getElementById('gas-bar-cont').classList.remove('hidden');
-                    const gasPercent = player.fuel;
-                    document.getElementById('gas-bar').style.width = `${gasPercent}%`;
-                } else {
-                    document.getElementById('gas-bar-cont').classList.add('hidden');
-                }
             }
             
             // Actualizar nivel
@@ -1971,181 +1425,119 @@
             document.getElementById('weapon-icon-btn').textContent = weapon.icon;
             document.getElementById('ammo-count').textContent = weapon.ammo ? weapon.ammo : '∞';
             document.getElementById('ammo-count').style.backgroundColor = weapon.color;
-            
-            // Actualizar estado
-            updateStatus();
         }
 
-        function updateStatus() {
-            let statusHTML = '';
-            if (player) {
-                if (hasFlashlight && isFlashlightOn) statusHTML += '<div class="status-badge flashlight-mod">Linterna 🔦</div>';
-                if (player.hasHelmet) statusHTML += '<div class="status-badge soldier-mod">Casco Blindado 🪖</div>';
-                if (player.onMotorcycle) statusHTML += '<div class="status-badge moto-mod">Moto Lista 🏍️</div>';
+        async function startGame(resume, mode) {
+            gameMode = mode;
+            const name = document.getElementById('player-name-input').value.trim();
+            if (!name) {
+                alert("Por favor ingresa un nombre para el agente");
+                return;
             }
-            document.getElementById('status-container').innerHTML = statusHTML;
-        }
-
-        function draw() {
-            // Limpiar canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Fondo
-            const baseDarkness = isNight ? 0.9 : 0.95;
-            ctx.fillStyle = `rgba(2, 4, 8, ${baseDarkness})`;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Grid
-            ctx.strokeStyle = isNight ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)';
-            let s = 150 * camera.zoom;
-            for(let x=(-camera.x*camera.zoom)%s; x<canvas.width; x+=s){ 
-                ctx.beginPath(); 
-                ctx.moveTo(x,0); 
-                ctx.lineTo(x,canvas.height); 
-                ctx.stroke(); 
-            }
-            for(let y=(-camera.y*camera.zoom)%s; y<canvas.height; y+=s){ 
-                ctx.beginPath(); 
-                ctx.moveTo(0,y); 
-                ctx.lineTo(canvas.width,y); 
-                ctx.stroke(); 
-            }
-
-            // Dibujar salpicaduras
-            splatters.forEach(s => {
-                ctx.globalAlpha = s.alpha * (s.life / 60);
-                ctx.fillStyle = s.color;
-                ctx.beginPath();
-                ctx.arc(
-                    (s.x - camera.x) * camera.zoom + canvas.width/2,
-                    (s.y - camera.y) * camera.zoom + canvas.height/2,
-                    s.radius * camera.zoom,
-                    0, Math.PI * 2
-                );
-                ctx.fill();
+            document.getElementById('singleplayer-screen').style.display = 'none';
+            player = new Entity(0, 0, { 
+                type: 'human', 
+                isPlayer: true, 
+                hp: 250, 
+                speed: 8.5, 
+                team: 'human', 
+                lives: 3,
+                playerName: name,
+                avatarIdx: selectedAvatarIdx
             });
-            ctx.globalAlpha = 1.0;
-
-            // Dibujar muros
-            walls.forEach(wall => {
-                const sx = (wall.x - camera.x) * camera.zoom + canvas.width/2;
-                const sy = (wall.y - camera.y) * camera.zoom + canvas.height/2;
-                const width = wall.width * camera.zoom;
-                const height = wall.height * camera.zoom;
-                
-                ctx.fillStyle = '#8B4513';
-                ctx.fillRect(sx - width/2, sy - height/2, width, height);
-                ctx.strokeStyle = '#654321';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(sx - width/2, sy - height/2, width, height);
-                
-                // Barra de vida del muro
-                if (wall.hp < wall.maxHp) {
-                    const hpPercent = wall.hp / wall.maxHp;
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                    ctx.fillRect(sx - width/2, sy - height/2 - 5, width, 3);
-                    ctx.fillStyle = '#10b981';
-                    ctx.fillRect(sx - width/2, sy - height/2 - 5, width * hpPercent, 3);
+            
+            entities = []; 
+            bullets = []; 
+            splatters = [];
+            isGameOver = false; 
+            isPaused = false; 
+            score = 0; 
+            kills = 0;
+            
+            // Inicializar munición
+            WEAPONS.UZI.ammo = 200;
+            WEAPONS.PISTOL.ammo = 60;
+            
+            if (resume) {
+                if (currentUser && !isGuest) {
+                    // Cargar desde Firestore
+                    const savedGame = await loadUserSavedGames();
+                    if (savedGame) {
+                        currentLvl = savedGame.level;
+                        score = savedGame.score;
+                        kills = savedGame.kills;
+                        targetKills = 100 + (currentLvl - 1) * 100;
+                        selectedAvatarIdx = savedGame.avatarIndex || 0;
+                        if (savedGame.playerName) {
+                            document.getElementById('player-name-input').value = savedGame.playerName;
+                        }
+                    } else {
+                        currentLvl = 1;
+                        targetKills = 100;
+                    }
+                } else {
+                    // Cargar desde cookies
+                    const savedGame = loadGameFromCookie();
+                    if (savedGame) {
+                        currentLvl = savedGame.level;
+                        score = savedGame.score;
+                        kills = savedGame.kills;
+                        targetKills = savedGame.targetKills;
+                        selectedAvatarIdx = savedGame.avatarIndex || 0;
+                        if (savedGame.playerName) {
+                            document.getElementById('player-name-input').value = savedGame.playerName;
+                        }
+                    } else {
+                        currentLvl = 1;
+                        targetKills = 100;
+                    }
                 }
-            });
-
-            // Dibujar balas
-            bullets.forEach(bullet => {
-                const sx = (bullet.x - camera.x) * camera.zoom + canvas.width/2;
-                const sy = (bullet.y - camera.y) * camera.zoom + canvas.height/2;
-                const size = 8 * camera.zoom;
-                
-                ctx.fillStyle = bullet.color;
-                ctx.beginPath();
-                ctx.arc(sx, sy, size, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Efecto de rastro
-                ctx.strokeStyle = bullet.color;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(sx, sy);
-                ctx.lineTo(sx - Math.cos(bullet.angle) * size * 3, sy - Math.sin(bullet.angle) * size * 3);
-                ctx.stroke();
-                
-                if (bullet.explosive) {
-                    ctx.strokeStyle = 'yellow';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.arc(sx, sy, size * 2, 0, Math.PI * 2);
-                    ctx.stroke();
-                }
-            });
-
-            // Dibujar entidades (zombies, bots)
-            entities.forEach(entity => {
-                if (entity.active) {
-                    entity.draw();
-                }
-            });
-
-            // Dibujar jugador
-            if (player && player.active) {
-                player.draw();
+            } else { 
+                currentLvl = 1; 
+                targetKills = 100; 
             }
-        }
-
-        function gameLoop() {
-            if (isGameOver) return;
-            if (!isPaused) {
-                updateLogic();
-            }
-            draw();
             
-            // Actualizar contador de zombies
-            const zombieCount = entities.filter(e => e.team === 'zombie' && e.active).length;
-            document.getElementById('map-zombies-count').innerText = zombieCount;
+            // Mostrar botón de salida
+            document.getElementById('exit-btn').classList.remove('hidden');
             
+            updateHUD(); 
             requestAnimationFrame(gameLoop);
         }
 
-        function generateMaze() {
-            // Generador simple de laberinto
-            for(let i = 0; i < 15; i++) {
-                mazes.push({
-                    x: (Math.random()-0.5) * 4000,
-                    y: (Math.random()-0.5) * 4000,
-                    width: 50 + Math.random() * 100,
-                    height: 300 + Math.random() * 200,
-                    rotation: Math.random() * Math.PI
-                });
+        function startMultiplayerGame(mode) {
+            const name = document.getElementById('mp-player-name-input').value.trim();
+            if (!name) {
+                alert("Por favor ingresa tu nombre");
+                return;
+            }
+            
+            alert(`Modo ${mode} seleccionado. Esta función está en desarrollo.`);
+            showMainMenu();
+        }
+
+        function exitToMenu() {
+            // Guardar partida antes de salir
+            saveGameToCookie();
+            
+            // Guardar en Firestore si está autenticado
+            if (currentUser && !isGuest) {
+                saveGameToFirestore(currentLvl, score, kills);
+            }
+            
+            // Mostrar mensaje de confirmación
+            if (confirm("¿Salir al menú principal? La partida se guardará automáticamente.")) {
+                showMainMenu();
+                // Ocultar elementos de juego
+                document.getElementById('exit-btn').classList.add('hidden');
+                // Detener bucle de juego
+                isGameOver = true;
             }
         }
 
-        function quickSwapWeapon() {
-            const weaponKeys = Object.keys(WEAPONS);
-            const currentIndex = weaponKeys.indexOf(activeWKey);
-            const nextIndex = (currentIndex + 1) % weaponKeys.length;
-            activeWKey = weaponKeys[nextIndex];
-            
-            const weapon = WEAPONS[activeWKey];
-            document.getElementById('weapon-icon-btn').textContent = weapon.icon;
-            document.getElementById('ammo-count').textContent = weapon.ammo ? weapon.ammo : '∞';
-            document.getElementById('ammo-count').style.backgroundColor = weapon.color;
-        }
-
-        function toggleFlashlight() {
-            if (!hasFlashlight) return;
-            
-            isFlashlightOn = !isFlashlightOn;
-            const btn = document.getElementById('flashlight-btn');
-            
-            if (isFlashlightOn) {
-                btn.style.backgroundColor = '#fbbf24';
-                btn.style.borderColor = '#f59e0b';
-                btn.style.boxShadow = '0 0 20px rgba(251, 191, 36, 0.5)';
-            } else {
-                btn.style.backgroundColor = '';
-                btn.style.borderColor = '';
-                btn.style.boxShadow = '';
-            }
-            
-            updateStatus();
+        function togglePause() {
+            isPaused = !isPaused;
+            document.getElementById('pause-btn').textContent = isPaused ? '▶️' : '⏸️';
         }
 
         // =========== EVENT LISTENERS ===========
@@ -2232,8 +1624,6 @@
                 isFiring = true;
             } else if (e.key === 'p' || e.key === 'P') { // P para pausa
                 togglePause();
-            } else if (e.key === 'b' || e.key === 'B') { // B para modo construcción
-                toggleBuildMode();
             } else if (e.key === 'w' || e.key === 'W') { // W para cambiar arma
                 quickSwapWeapon();
             }
@@ -2275,9 +1665,6 @@
                 Object.assign(gameConfig, JSON.parse(savedConfig));
                 camera.zoom = gameConfig.zoomLevel;
             }
-            
-            // Cargar configuración de Firestore si está autenticado
-            await loadUserConfiguration();
             
             // Cargar imágenes
             Object.keys(ASSETS_URLS).forEach(k => {
