@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://zombiesupervivearena.onrender.com/sitemap.xml
