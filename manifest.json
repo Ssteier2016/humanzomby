@@ -1,65 +1,39 @@
 {
-  "name": "Zombie Survivor Multiplayer",
+  "name": "Zombie Survivor: Multiplayer",
   "short_name": "ZombieSurvivor",
-  "description": "Juego multijugador de supervivencia zombie con 10 tipos de enemigos",
+  "description": "Juego multijugador de supervivencia zombie en tiempo real",
   "start_url": "/",
-  "display": "standalone",
+  "display": "fullscreen",
   "orientation": "landscape",
   "background_color": "#020408",
   "theme_color": "#3b82f6",
   "icons": [
     {
-      "src": "/logozombie.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/3408/3408545.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
-    {
-      "src": "/logozombie.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/logozombie.png",
-      "sizes": "1024x1024",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "categories": ["games", "entertainment", "action"],
-  "lang": "es",
-  "dir": "ltr",
-  "prefer_related_applications": false,
-  "shortcuts": [
-    {
-      "name": "Nueva Partida",
-      "short_name": "Jugar",
-      "description": "Iniciar nueva partida multijugador",
-      "url": "/?action=newgame",
-      "icons": [{ "src": "/logozombie.png", "sizes": "96x96" }]
-    },
-    {
-      "name": "Continuar",
-      "short_name": "Continuar",
-      "description": "Continuar partida guardada",
-      "url": "/?action=continue",
-      "icons": [{ "src": "/logozombie.png", "sizes": "96x96" }]
-    }
-  ],
-  "screenshots": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/3408/3408545.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "label": "Pantalla de juego multijugador"
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ],
+  "categories": ["games", "action", "multiplayer"],
+  "prefer_related_applications": false,
   "related_applications": [],
-  "scope": "/",
-  "id": "/",
-  "display_override": ["window-controls-overlay", "standalone", "browser"],
-  "edge_side_panel": {
-    "preferred_width": 400
-  }
+  "shortcuts": [
+    {
+      "name": "Jugar Solo",
+      "short_name": "Solo",
+      "description": "Iniciar partida en solitario",
+      "url": "/?mode=solo"
+    },
+    {
+      "name": "Multijugador",
+      "short_name": "Multi",
+      "description": "Crear o unirse a sala multijugador",
+      "url": "/?mode=multiplayer"
+    }
+  ]
 }
