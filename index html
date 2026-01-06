@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SURVIVOR OPS: RED ZONE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap');
+
+        body { margin: 0; overflow: hidden; background: #050505; font-family: 'Inter', sans-serif; touch-action: none; }
+        canvas { display: block; }
+        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; color: white; }
+        .clickable { pointer-events: auto; }
+        .font-game { font-family: 'Orbitron', sans-serif; }
+        .font-military { font-family: 'Black Ops One', cursive; }
+        
+        /* Pantalla de Portada Mejorada */
+        #startup-screen {
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(20,0,0,0.95)), 
+                        url('https://images.unsplash.com/photo-1509248961158-e54f6934749c?auto=format&fit=crop&w=1200&q=80');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .modal-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 1000;
+            backdrop-filter: blur(8px);
+        }
+
+        .avatar-card {
+            border: 3px solid #1e293b;
+            transition: all 0.2s;
+            cursor: pointer;
+            background: rgba(30, 41, 59, 0.3);
+        }
+        .avatar-card.selected {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.2);
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+        }
+
+        #action-btn {
+            width: 90px; height: 90px;
+            background: radial-gradient(circle, #ef4444 0%, #7f1d1d 100%);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 40px; border: 4px solid rgba(255,255,255,0.3);
+            box-shadow: 0 0 40px rgba(239, 68, 68, 0.6);
+        }
+
+        .refuge-timer {
+            position: absolute;
+            top: -40px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            padding: 2px 10px; border-radius: 4px;
+            font-size: 12px; color: #3b82f6; border: 1px solid #3b82f6;
+            white-space: nowrap;
+        }
+
+        .status-badge {
+            padding: 6px 14px; border-radius: 8px; font-size: 11px;
+            font-weight: bold; text-transform: uppercase; letter-spacing: 1px;
+            margin-top: 4px; box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .healing { background: #059669; animation: pulse 1s infinite; }
+        .recharging { background: #3b82f6; animation: pulse 0.5s infinite; }
+        .cooldown-alert { background: #dc2626; color: white; border: 2px solid white; }
+        
+        @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
+        
+        .blood-overlay {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            pointer-events:none; box-shadow: inset 0 0 100px rgba(255,0,0,0);
+            transition: box-shadow 0.3s; z-index: 5;
+        }
+        .damage-taken { box-shadow: inset 0 0 150px rgba(255,0,0,0.6); }
+    </style>
+</head>
+<body>
+
+    <div id="blood-vignette" class="blood-overlay"></div>
+    <div id="level-up-text" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-amber-500 text-6xl font-military opacity-0 transition-opacity duration-500 z-[100] pointer-events-none drop-shadow-[0_0_30px_rgba(245,158,11,0.8)]">¡NIVEL COMPLETADO!</div>
+
+    <!-- Portada Cinematográfica -->
+    <div id="startup-screen" class="modal-screen flex clickable px-6 text-center">
+        <div class="mb-10">
+            <h1 class="text-7xl font-military text-red-600 tracking-tighter drop-shadow-2xl">SURVIVOR OPS</h1>
+            <h2 class="text-2xl font-game text-white tracking-[0.5em] mt-[-10px] bg-red-600/20 py-1">RED ZONE</h2>
+        </div>
+        
+        <p id="cloud-status" class="text-blue-400 mb-8 text-[10px] tracking-[0.4em] font-bold uppercase">Sincronizando Satélite de Combate...</p>
+        
+        <div id="setup-ui" class="hidden flex flex-col items-center w-full max-w-md">
+            <div class="grid grid-cols-4 gap-4 mb-10 w-full">
+                <div onclick="selectAvatar(0)" id="av-0" class="avatar-card selected p-1 rounded-xl">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3408/3408545.png" class="w-full">
+                </div>
+                <div onclick="selectAvatar(1)" id="av-1" class="avatar-card p-1 rounded-xl">
+                    <img src="https://cdn-icons-png.flaticon.com/512/4140/4140037.png" class="w-full">
+                </div>
+                <div onclick="selectAvatar(2)" id="av-2" class="avatar-card p-1 rounded-xl">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1154/1154443.png" class="w-full">
+                </div>
+                <div onclick="selectAvatar(3)" id="av-3" class="avatar-card p-1 rounded-xl">
+                    <img src="https://cdn-icons-png.flaticon.com/512/606/606553.png" class="w-full">
+                </div>
+            </div>
+
+            <div class="w-full space-y-4">
+                <input id="player-name-input" type="text" maxlength="12" placeholder="ID DEL AGENTE" 
+                    class="w-full bg-black/60 border-2 border-red-900/50 text-white p-5 rounded-xl text-center font-bold focus:border-red-500 outline-none uppercase tracking-widest text-xl">
+                
+                <div class="grid grid-cols-1 gap-3">
+                    <button id="start-btn" onclick="startGame(false)" class="bg-red-700 text-white font-black py-5 rounded-xl text-2xl hover:bg-red-600 font-military shadow-[0_0_20px_rgba(185,28,28,0.4)] transition-all">INICIAR OPERACIÓN</button>
+                    <button id="resume-btn" onclick="startGame(true)" class="hidden bg-blue-700 text-white font-black py-4 rounded-xl text-xl hover:bg-blue-600 font-military shadow-lg">CONTINUAR NV. <span id="saved-level">1</span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interfaz de Combate -->
+    <div class="ui-layer p-6 flex flex-col justify-between">
+        <div class="flex justify-between items-start">
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-4">
+                    <div id="lives-display" class="text-3xl drop-shadow-[0_0_10px_rgba(255,0,0,0.5)]">❤️❤️❤️</div>
+                    <button id="pause-btn" onclick="togglePause()" class="clickable bg-black/60 p-3 rounded-xl border border-white/20 text-xl backdrop-blur-md">⏸️</button>
+                </div>
+                <div class="w-56 h-4 bg-gray-950 rounded-full border-2 border-white/10 overflow-hidden shadow-inner relative">
+                    <div id="hp-bar" class="h-full bg-gradient-to-r from-red-600 to-orange-500 transition-all duration-300"></div>
+                    <div class="absolute inset-0 flex justify-center items-center text-[9px] font-bold">VITALIDAD</div>
+                </div>
+                <div id="status-container" class="flex flex-col items-start gap-1"></div>
+            </div>
+
+            <div class="flex flex-col items-end gap-3">
+                <div class="bg-black/60 p-3 px-6 rounded-2xl border border-red-500/30 text-right backdrop-blur-md">
+                    <div class="text-[10px] font-bold text-red-500 uppercase tracking-widest">Nivel Operativo</div>
+                    <div id="level-display" class="text-3xl font-military italic text-white">01</div>
+                </div>
+                
+                <div class="relative group">
+                    <button onclick="quickSwapWeapon()" class="clickable bg-zinc-900 w-20 h-20 rounded-2xl border-4 border-zinc-700 shadow-2xl flex items-center justify-center text-4xl transition-all active:scale-90 hover:border-red-500">
+                        <span id="weapon-icon-btn">🔫</span>
+                    </button>
+                    <div id="ammo-count" class="absolute -bottom-2 -left-2 bg-red-600 text-white text-xs font-black px-3 py-1 rounded-lg border-2 border-white shadow-xl">60</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-end">
+            <div class="w-full max-w-[200px]">
+                <div class="bg-black/80 p-4 rounded-2xl border border-white/10 backdrop-blur-md">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[9px] text-red-400 font-black uppercase tracking-tighter">Eliminaciones</span>
+                        <span id="z-remain" class="text-xs font-mono font-bold text-white">0/100</span>
+                    </div>
+                    <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                        <div id="objective-progress" class="h-full bg-red-600 shadow-[0_0_10px_#dc2626]" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex flex-col items-end gap-4">
+                <div id="score-display" class="bg-black/60 p-2 px-6 rounded-xl border border-white/5 text-right">
+                    <div class="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">EXP. ACUMULADA</div>
+                    <div id="score-val" class="text-xl font-military text-amber-500">00000</div>
+                </div>
+                <div id="action-btn" class="clickable select-none transition-all active:scale-75">💥</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fin de la Misión -->
+    <div id="game-over" class="modal-screen clickable">
+        <h2 class="text-7xl font-military mb-4 text-red-700 italic drop-shadow-2xl uppercase">BAJA EN COMBATE</h2>
+        <div id="final-stats" class="text-white mb-8 font-mono text-center text-xl bg-red-900/20 p-6 rounded-2xl border border-red-500/30"></div>
+        <div class="w-full max-w-sm bg-black/60 p-6 rounded-2xl border border-white/10 mb-8 backdrop-blur-xl">
+            <h3 class="text-amber-500 font-military text-lg mb-4 text-center">CUADRO DE HONOR</h3>
+            <div id="leaderboard-list" class="flex flex-col gap-3"></div>
+        </div>
+        <button onclick="location.reload()" class="bg-white text-black font-military py-6 px-20 rounded-2xl text-2xl shadow-2xl hover:bg-red-600 hover:text-white transition-colors">REINTENTAR MISIÓN</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+<script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+    import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+    const firebaseConfig = JSON.parse('{"apiKey":"AIzaSyBxMzw8I7nc7e29X1xQoH2kgGHIiHzLUGo","authDomain":"presupuesto-familiar-15478.firebaseapp.com","databaseURL":"https://presupuesto-familiar-15478-default-rtdb.firebaseio.com","projectId":"presupuesto-familiar-15478","storageBucket":"presupuesto-familiar-15478.firebasestorage.app","messagingSenderId":"436445257047","appId":"1:436445257047:web:e692e018781bbdeb7c3212","measurementId":"G-CBPM2XMB67"}');
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const appId = 'zombie-red-zone-ultra-pro';
+
+    let currentUser = null;
+    let savedData = null;
+
+    const initAuth = async () => {
+        try {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
+            else await signInAnonymously(auth);
+        } catch (err) {
+            document.getElementById('cloud-status').innerText = "SATÉLITE OFFLINE";
+            document.getElementById('setup-ui').classList.remove('hidden');
+        }
+    };
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            currentUser = user;
+            document.getElementById('cloud-status').innerText = "SISTEMAS ONLINE";
+            await loadSavedData();
+            document.getElementById('setup-ui').classList.remove('hidden');
+        }
+    });
+
+    async function loadSavedData() {
+        if (!currentUser) return;
+        try {
+            const saveRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'saveData', 'current');
+            const snap = await getDoc(saveRef);
+            if (snap.exists()) {
+                savedData = snap.data();
+                document.getElementById('resume-btn').classList.remove('hidden');
+                document.getElementById('saved-level').innerText = savedData.level;
+                document.getElementById('player-name-input').value = savedData.name;
+                window.selectAvatar(savedData.avatarIdx);
+            }
+        } catch (e) {}
+    }
+
+    window.saveGameProgress = async (lvl, scr, name, avIdx) => {
+        if (!currentUser) return;
+        try {
+            const saveRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'saveData', 'current');
+            await setDoc(saveRef, { level: lvl, score: scr, name, avatarIdx: avIdx, timestamp: Date.now() });
+        } catch (e) {}
+    };
+
+    window.submitHighScore = async (name, score, level, avatarIdx) => {
+        if (!currentUser) return;
+        try {
+            const scoreRef = doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', currentUser.uid);
+            await setDoc(scoreRef, { name, score, level, avatarIdx, timestamp: Date.now() });
+        } catch (e) {}
+    };
+
+    window.getLeaderboard = async () => {
+        try {
+            const lbRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
+            const snap = await getDocs(lbRef);
+            const scores = [];
+            snap.forEach(doc => scores.push(doc.data()));
+            return scores.sort((a, b) => b.score - a.score).slice(0, 5);
+        } catch (e) { return []; }
+    };
+
+    initAuth();
+</script>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // --- CONFIGURACIÓN ZOMBIES (DAÑO AUMENTADO) ---
+    const ZOMBIE_TYPES = Array.from({ length: 10 }, (_, i) => {
+        const index = i + 1;
+        return {
+            id: index,
+            radius: (40 + (i * 10)),
+            hp: 200 * Math.pow(1.6, i),
+            speed: 3.2 - (i * 0.2), 
+            damage: 25 + (i * 12), // DAÑO MASIVO
+            scoreValue: 500 * index,
+            color: `hsl(${140 - (i * 14)}, 100%, 50%)`
+        };
+    });
+
+    const ASSETS = {
+        hospital: 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png',
+        refuge: 'https://cdn-icons-png.flaticon.com/512/2590/2590525.png',
+        hero: [
+            'https://cdn-icons-png.flaticon.com/512/3408/3408545.png',
+            'https://cdn-icons-png.flaticon.com/512/4140/4140037.png',
+            'https://cdn-icons-png.flaticon.com/512/1154/1154443.png',
+            'https://cdn-icons-png.flaticon.com/512/606/606553.png'
+        ],
+        bot: 'https://cdn-icons-png.flaticon.com/512/1067/1067357.png'
+    };
+
+    const WEAPONS = {
+        PISTOL: { icon: '🔫', speed: 22, damage: 120, delay: 180, ammo: 80, maxAmmo: 120, color: '#fbbf24' },
+        PLASMA: { icon: '🔥', speed: 30, damage: 90, delay: 70, ammo: 200, maxAmmo: 300, color: '#22d3ee' },
+        GRENADE: { icon: '💣', speed: 12, damage: 3500, delay: 1500, ammo: 10, maxAmmo: 15, color: '#ef4444', isGrenade: true }
+    };
+
+    let images = {};
+    let player, entities = [], bullets = [], buildings = [], splatters = [], items = [], grenades = [];
+    let camera = { x: 0, y: 0, zoom: 0.9 };
+    let keys = {}, touchMove = { x: 0, y: 0 }, touchStart = null;
+    let isGameOver = false, isPaused = false, score = 0, kills = 0, targetKills = 100, currentLvl = 1;
+    let activeWKey = 'PISTOL', selectedAvatarIdx = 0, isFiring = false, lastFire = 0;
+
+    class Entity {
+        constructor(x, y, config) {
+            this.x = x; this.y = y;
+            this.isPlayer = config.isPlayer || false;
+            this.isBot = config.isBot || false;
+            this.team = config.team || 'zombie';
+            this.radius = config.radius || 25;
+            this.maxHp = config.hp || 100;
+            this.hp = this.maxHp;
+            this.speed = config.speed || 4;
+            this.damage = config.damage || 1;
+            this.angle = 0;
+            this.color = config.color || '#fff';
+            this.invul = 0;
+            this.active = true;
+            this.lives = config.lives || 3;
+            this.inRefuge = false;
+        }
+
+        update() {
+            if (this.invul > 0) this.invul--;
+            if (this.isPlayer) { this.checkBuildings(); this.autoAim(); }
+            if (this.isBot) this.aiBot();
+            if (this.team === 'zombie') this.aiZombie();
+        }
+
+        checkBuildings() {
+            let statusHTML = '';
+            let foundRefuge = false;
+
+            buildings.forEach(b => {
+                let dist = Math.hypot(this.x - b.x, this.y - b.y);
+                if (dist < b.radius + 20) {
+                    if (b.type === 'hospital' && this.hp < this.maxHp) {
+                        this.hp += 0.8;
+                        statusHTML += '<div class="status-badge healing">Regenerando Tejidos...</div>';
+                    }
+                    if (b.type === 'refuge') {
+                        if (b.cooldown > 0) {
+                            statusHTML += `<div class="status-badge cooldown-alert">REFUGIO DESTRUIDO (${Math.ceil(b.cooldown/60)}s)</div>`;
+                        } else {
+                            foundRefuge = true;
+                            b.timer++;
+                            statusHTML += `<div class="status-badge recharging">En Bunker (${Math.ceil((600 - b.timer)/60)}s) - Recargando...</div>`;
+                            
+                            // Recarga Lenta
+                            if (b.timer % 30 === 0) {
+                                Object.keys(WEAPONS).forEach(w => {
+                                    if (WEAPONS[w].ammo < WEAPONS[w].maxAmmo) WEAPONS[w].ammo++;
+                                });
+                                updateHUD();
+                            }
+
+                            if (b.timer >= 600) { // 10 Segundos
+                                b.cooldown = 3600; // 60 Segundos de bloqueo
+                                b.timer = 0;
+                            }
+                        }
+                    }
+                } else if (b.type === 'refuge' && b.timer > 0) {
+                    // Si sale voluntariamente, también entra en cooldown
+                    b.cooldown = 3600;
+                    b.timer = 0;
+                }
+            });
+            
+            this.inRefuge = foundRefuge;
+            document.getElementById('status-container').innerHTML = statusHTML;
+        }
+
+        autoAim() {
+            let target = null, minDist = 800;
+            entities.forEach(e => {
+                if (e.active && e.team === 'zombie') {
+                    let d = Math.hypot(e.x - this.x, e.y - this.y);
+                    if (d < minDist) { minDist = d; target = e; }
+                }
+            });
+            if (target) this.angle = Math.atan2(target.y - this.y, target.x - this.x);
+        }
+
+        aiBot() {
+            let target = null, minDist = 800;
+            entities.forEach(e => {
+                if (e.active && e.team === 'zombie') {
+                    let d = Math.hypot(e.x - this.x, e.y - this.y);
+                    if (d < minDist) { minDist = d; target = e; }
+                }
+            });
+            if (target) {
+                this.angle = Math.atan2(target.y - this.y, target.x - this.x);
+                let d = Math.hypot(target.x - this.x, target.y - this.y);
+                if (d > 300) { this.x += Math.cos(this.angle) * this.speed; this.y += Math.sin(this.angle) * this.speed; }
+                if (Math.random() < 0.05) spawnBullet(this, this.angle, this.color);
+            }
+        }
+
+        aiZombie() {
+            if (player.inRefuge) { // Zombies deambulan si el jugador está en el bunker
+                this.x += Math.cos(this.angle) * this.speed * 0.3;
+                if (Math.random() < 0.02) this.angle = Math.random() * Math.PI * 2;
+                return;
+            }
+
+            let d = Math.hypot(player.x - this.x, player.y - this.y);
+            this.angle = Math.atan2(player.y - this.y, player.x - this.x);
+            this.x += Math.cos(this.angle) * this.speed;
+            this.y += Math.sin(this.angle) * this.speed;
+
+            if (d < this.radius + player.radius) player.takeDamage(this.damage);
+        }
+
+        takeDamage(amt) {
+            if (this.invul > 0 || this.inRefuge) return; 
+            this.hp -= amt;
+            if (this.isPlayer) {
+                document.getElementById('blood-vignette').classList.add('damage-taken');
+                setTimeout(() => document.getElementById('blood-vignette').classList.remove('damage-taken'), 300);
+                this.invul = 60; // 1 segundo de protección
+            }
+            if (this.hp <= 0) {
+                if (this.isPlayer && this.lives > 1) {
+                    this.lives--; this.hp = this.maxHp; this.invul = 180;
+                    updateHUD();
+                } else {
+                    this.active = false;
+                    if (this.isPlayer) endGame(); else onDeath(this);
+                }
+            }
+            if (this.isPlayer) updateHUD();
+        }
+
+        draw() {
+            const sx = (this.x - camera.x) * camera.zoom;
+            const sy = (this.y - camera.y) * camera.zoom;
+            const size = (this.radius * 2) * camera.zoom;
+
+            if (sx < -size || sx > canvas.width + size || sy < -size || sy > canvas.height + size) return;
+
+            // Aura de Protección (Sin parpadeo)
+            if (this.invul > 0 || this.inRefuge) {
+                ctx.beginPath();
+                ctx.arc(sx, sy, size/1.5, 0, Math.PI*2);
+                ctx.strokeStyle = this.inRefuge ? '#3b82f6' : '#ef4444';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+                ctx.globalAlpha = 0.7;
+            }
+
+            ctx.save();
+            ctx.translate(sx, sy);
+            ctx.rotate(this.angle + Math.PI/2);
+            let img = this.isPlayer ? images.hero[selectedAvatarIdx] : (this.isBot ? images.bot : null);
+            if (img) ctx.drawImage(img, -size/2, -size/2, size, size);
+            else {
+                ctx.fillStyle = this.color;
+                ctx.beginPath(); ctx.arc(0,0,size/2,0,Math.PI*2); ctx.fill();
+            }
+            ctx.restore();
+            ctx.globalAlpha = 1.0;
+        }
+    }
+
+    function spawnBullet(owner, angle, color) {
+        let w = WEAPONS[activeWKey];
+        if (owner.isBot) w = WEAPONS.PISTOL;
+
+        if (w.isGrenade) {
+            grenades.push({
+                x: owner.x, y: owner.y, 
+                vx: Math.cos(angle) * w.speed, vy: Math.sin(angle) * w.speed,
+                timer: 180, radius: 0, maxRadius: 450, exploded: false
+            });
+        } else {
+            bullets.push({
+                x: owner.x, y: owner.y, vx: Math.cos(angle) * w.speed, vy: Math.sin(angle) * w.speed,
+                damage: w.damage + (currentLvl * 10), color: color || w.color, owner: owner, life: 100
+            });
+        }
+    }
+
+    function onDeath(e) {
+        for(let i=0; i<6; i++) splatters.push({ x: e.x+(Math.random()-0.5)*40, y: e.y+(Math.random()-0.5)*40, r: 10+Math.random()*30, color: e.color, alpha: 0.7 });
+        kills++; score += ZOMBIE_TYPES.find(t => t.radius === e.radius)?.scoreValue || 500;
+        if (kills >= targetKills) {
+            currentLvl++; targetKills += 100; kills = 0;
+            const anim = document.getElementById('level-up-text');
+            anim.style.opacity = '1'; setTimeout(() => anim.style.opacity = '0', 3000);
+            player.hp = player.maxHp;
+            const name = document.getElementById('player-name-input').value;
+            if (window.saveGameProgress) window.saveGameProgress(currentLvl, score, name, selectedAvatarIdx);
+        }
+        updateHUD();
+    }
+
+    function startGame(resume) {
+        const name = document.getElementById('player-name-input').value.trim() || "AGENTE";
+        document.getElementById('startup-screen').style.display = 'none';
+        
+        player = new Entity(0, 0, { isPlayer: true, hp: 400, speed: 7.5, team: 'human' });
+        entities = []; bullets = []; buildings = []; splatters = []; items = []; grenades = [];
+        isGameOver = false; isPaused = false;
+        
+        if (resume && savedData) {
+            currentLvl = savedData.level; score = savedData.score;
+            targetKills = 100 + (currentLvl - 1) * 100;
+        } else { currentLvl = 1; targetKills = 100; score = 0; }
+        
+        for(let i=0; i<3; i++) spawnBuilding('hospital');
+        for(let i=0; i<3; i++) spawnBuilding('refuge');
+        for(let i=0; i<2; i++) {
+            let a = Math.random()*Math.PI*2, d = 1000;
+            entities.push(new Entity(Math.cos(a)*d, Math.sin(a)*d, { isBot: true, team: 'human', hp: 800, speed: 5, color: '#a855f7' }));
+        }
+
+        updateHUD();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function spawnBuilding(type) {
+        let a = Math.random()*Math.PI*2, d = 1500 + Math.random()*2000;
+        buildings.push({ x: Math.cos(a)*d, y: Math.sin(a)*d, type: type, radius: 130, img: images[type], timer: 0, cooldown: 0 });
+    }
+
+    function updateLogic() {
+        let vx = 0, vy = 0;
+        if (keys['w']) vy = -1; if (keys['s']) vy = 1; if (keys['a']) vx = -1; if (keys['d']) vx = 1;
+        if (touchMove.x || touchMove.y) { vx = touchMove.x; vy = touchMove.y; }
+
+        if (vx || vy) {
+            let m = Math.hypot(vx, vy);
+            player.x += (vx/m) * player.speed; player.y += (vy/m) * player.speed;
+        }
+
+        camera.x = player.x - (canvas.width/2)/camera.zoom;
+        camera.y = player.y - (canvas.height/2)/camera.zoom;
+
+        if (isFiring && Date.now() - lastFire > WEAPONS[activeWKey].delay) {
+            if (WEAPONS[activeWKey].ammo > 0) {
+                spawnBullet(player, player.angle);
+                WEAPONS[activeWKey].ammo--;
+                lastFire = Date.now();
+                updateHUD();
+            }
+        }
+
+        buildings.forEach(b => { if (b.cooldown > 0) b.cooldown--; });
+
+        bullets.forEach((b, i) => {
+            b.x += b.vx; b.y += b.vy; b.life--;
+            entities.forEach(e => {
+                if (e.active && e !== b.owner && Math.hypot(b.x-e.x, b.y-e.y) < e.radius) {
+                    e.takeDamage(b.damage); b.life = 0;
+                }
+            });
+            if (b.life <= 0) bullets.splice(i, 1);
+        });
+
+        grenades.forEach((g, i) => {
+            if (!g.exploded) {
+                g.x += g.vx; g.y += g.vy; g.vx *= 0.96; g.vy *= 0.96;
+                g.timer--;
+                if (g.timer <= 0) g.exploded = true;
+            } else {
+                g.radius += 15;
+                entities.forEach(e => {
+                    if (e.active && Math.hypot(g.x-e.x, g.y-e.y) < g.radius) e.takeDamage(50);
+                });
+                if (g.radius >= g.maxRadius) grenades.splice(i, 1);
+            }
+        });
+
+        if (entities.filter(e => e.team === 'zombie').length < (40 + currentLvl * 15) && Math.random() < 0.08) {
+            let a = Math.random()*Math.PI*2, d = 1600;
+            const type = ZOMBIE_TYPES[Math.floor(Math.random() * Math.min(10, currentLvl + 1))];
+            entities.push(new Entity(player.x + Math.cos(a)*d, player.y + Math.sin(a)*d, type));
+        }
+
+        entities.forEach(e => e.update());
+        player.update();
+        entities = entities.filter(e => e.active || e.isBot);
+    }
+
+    function draw() {
+        ctx.fillStyle = '#050505'; ctx.fillRect(0,0,canvas.width, canvas.height);
+        
+        ctx.strokeStyle = 'rgba(255,0,0,0.05)';
+        let s = 100 * camera.zoom;
+        for(let x=(-camera.x*camera.zoom)%s; x<canvas.width; x+=s){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
+        for(let y=(-camera.y*camera.zoom)%s; y<canvas.height; y+=s){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
+
+        splatters.forEach(sp => {
+            ctx.fillStyle = sp.color; ctx.globalAlpha = sp.alpha;
+            ctx.beginPath(); ctx.arc((sp.x-camera.x)*camera.zoom, (sp.y-camera.y)*camera.zoom, sp.r*camera.zoom, 0, Math.PI*2); ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+
+        buildings.forEach(b => {
+            let sx = (b.x-camera.x)*camera.zoom, sy = (b.y-camera.y)*camera.zoom, sz = b.radius*2.2*camera.zoom;
+            if (b.cooldown > 0) ctx.filter = 'grayscale(1) brightness(0.5)';
+            ctx.drawImage(b.img, sx-sz/2, sy-sz/2, sz, sz);
+            ctx.filter = 'none';
+
+            if (b.type === 'refuge' && b.timer > 0) {
+                ctx.fillStyle = 'white'; ctx.font = 'bold 12px Arial'; ctx.textAlign = 'center';
+                ctx.fillText(`EVACUACIÓN EN: ${Math.ceil((600-b.timer)/60)}s`, sx, sy - sz/1.8);
+            }
+        });
+
+        grenades.forEach(g => {
+            let sx = (g.x-camera.x)*camera.zoom, sy = (g.y-camera.y)*camera.zoom;
+            if (!g.exploded) {
+                ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(sx, sy, 10*camera.zoom, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = 'red'; ctx.font = 'bold 10px Arial'; ctx.fillText(Math.ceil(g.timer/60), sx, sy-15);
+            } else {
+                ctx.beginPath(); ctx.arc(sx, sy, g.radius*camera.zoom, 0, Math.PI*2);
+                ctx.fillStyle = `rgba(255, 100, 0, ${1 - g.radius/g.maxRadius})`; ctx.fill();
+            }
+        });
+
+        bullets.forEach(b => {
+            ctx.fillStyle = b.color;
+            ctx.beginPath(); ctx.arc((b.x-camera.x)*camera.zoom, (b.y-camera.y)*camera.zoom, 5*camera.zoom, 0, Math.PI*2); ctx.fill();
+        });
+
+        entities.forEach(e => e.draw());
+        player.draw();
+    }
+
+    function gameLoop() {
+        if (!isGameOver) {
+            if (!isPaused) updateLogic();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+    }
+
+    function updateHUD() {
+        document.getElementById('lives-display').innerText = "❤️".repeat(player.lives);
+        document.getElementById('hp-bar').style.width = `${(player.hp/player.maxHp)*100}%`;
+        document.getElementById('score-val').innerText = score.toString().padStart(6, '0');
+        document.getElementById('level-display').innerText = currentLvl.toString().padStart(2, '0');
+        document.getElementById('z-remain').innerText = `${kills}/${targetKills}`;
+        document.getElementById('objective-progress').style.width = `${(kills/targetKills)*100}%`;
+        document.getElementById('weapon-icon-btn').innerText = WEAPONS[activeWKey].icon;
+        document.getElementById('ammo-count').innerText = WEAPONS[activeWKey].ammo;
+    }
+
+    window.selectAvatar = (idx) => {
+        selectedAvatarIdx = idx;
+        document.querySelectorAll('.avatar-card').forEach((c, i) => c.classList.toggle('selected', i === idx));
+    };
+
+    window.togglePause = () => { isPaused = !isPaused; document.getElementById('pause-btn').innerText = isPaused ? '▶️' : '⏸️'; };
+    window.quickSwapWeapon = () => { 
+        let keys = Object.keys(WEAPONS);
+        let idx = keys.indexOf(activeWKey);
+        activeWKey = keys[(idx + 1) % keys.length];
+        updateHUD();
+    };
+
+    async function endGame() {
+        isGameOver = true;
+        const name = document.getElementById('player-name-input').value || "AGENTE";
+        document.getElementById('game-over').style.display = 'flex';
+        document.getElementById('final-stats').innerHTML = `MISIÓN FALLIDA<br>AGENTE: ${name}<br>NIVEL: ${currentLvl}<br>SCORE: ${score}`;
+        if (window.submitHighScore) await window.submitHighScore(name, score, currentLvl, selectedAvatarIdx);
+        const lb = await window.getLeaderboard();
+        document.getElementById('leaderboard-list').innerHTML = lb.map((s, i) => `
+            <div class="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
+                <span class="text-xs">#${i+1} <b>${s.name}</b></span>
+                <span class="text-amber-500 font-bold text-xs">${s.score} PTS</span>
+            </div>`).join('');
+    }
+
+    window.onload = () => {
+        Object.keys(ASSETS).forEach(k => {
+            if (Array.isArray(ASSETS[k])) images[k] = ASSETS[k].map(u => { let i = new Image(); i.src = u; return i; });
+            else { images[k] = new Image(); images[k].src = ASSETS[k]; }
+        });
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    };
+
+    const bAct = document.getElementById('action-btn');
+    const startFire = (e) => { isFiring = true; e.preventDefault(); };
+    const endFire = () => isFiring = false;
+    bAct.addEventListener('touchstart', startFire); bAct.addEventListener('touchend', endFire);
+    bAct.addEventListener('mousedown', startFire); bAct.addEventListener('mouseup', endFire);
+
+    canvas.addEventListener('touchstart', (e) => { touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY }; });
+    canvas.addEventListener('touchmove', (e) => {
+        if (!touchStart) return;
+        const dx = e.touches[0].clientX - touchStart.x, dy = e.touches[0].clientY - touchStart.y;
+        const d = Math.hypot(dx, dy); if (d > 10) touchMove = { x: dx/d, y: dy/d };
+    });
+    canvas.addEventListener('touchend', () => { touchStart = null; touchMove = { x: 0, y: 0 }; });
+    window.onkeydown = (e) => keys[e.key.toLowerCase()] = true; window.onkeyup = (e) => keys[e.key.toLowerCase()] = false;
+</script>
+</body>
+</html>
+
