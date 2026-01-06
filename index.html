@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SURVIVOR OPS: RED ZONE PRO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap');
+
+        body { margin: 0; overflow: hidden; background: #050505; font-family: 'Inter', sans-serif; touch-action: none; }
+        canvas { display: block; }
+        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; color: white; }
+        .clickable { pointer-events: auto; }
+        .font-game { font-family: 'Orbitron', sans-serif; }
+        .font-military { font-family: 'Black Ops One', cursive; }
+        
+        #startup-screen {
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(20,0,0,0.95)), 
+                        url('https://images.unsplash.com/photo-1509248961158-e54f6934749c?auto=format&fit=crop&w=1200&q=80');
+            background-size: cover; background-position: center;
+        }
+
+        .modal-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000;
+            backdrop-filter: blur(8px);
+        }
+
+        .avatar-card {
+            border: 3px solid #1e293b; transition: all 0.2s; cursor: pointer; background: rgba(30, 41, 59, 0.3);
+        }
+        .avatar-card.selected {
+            border-color: #ef4444; background: rgba(239, 68, 68, 0.2); transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+        }
+
+        #action-btn {
+            width: 85px; height: 85px; background: radial-gradient(circle, #ef4444 0%, #7f1d1d 100%);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 35px; border: 4px solid rgba(255,255,255,0.3);
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+        }
+
+        .status-badge {
+            padding: 6px 14px; border-radius: 8px; font-size: 10px; font-weight: bold;
+            text-transform: uppercase; letter-spacing: 1px; margin-top: 4px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
+        }
+        .healing { background: #059669; animation: pulse 1s infinite; }
+        .recharging { background: #3b82f6; animation: pulse 0.5s infinite; }
+        
+        @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
+        
+        #mini-map {
+            position: absolute; bottom: 20px; left: 20px; width: 140px; height: 140px;
+            background: rgba(0, 20, 0, 0.7); border: 2px solid #00ff0055; border-radius: 10px;
+            overflow: hidden; pointer-events: none; z-index: 20;
+        }
+
+        .blood-overlay {
+            position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none;
+            box-shadow: inset 0 0 100px rgba(255,0,0,0); transition: box-shadow 0.3s; z-index: 5;
+        }
+        .damage-taken { box-shadow: inset 0 0 150px rgba(255,0,0,0.6); }
+    </style>
+</head>
+<body>
+
+    <div id="blood-vignette" class="blood-overlay"></div>
+    <div id="level-up-text" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-amber-500 text-5xl font-military opacity-0 transition-opacity duration-500 z-[100] pointer-events-none drop-shadow-[0_0_30px_rgba(245,158,11,0.8)]">¡NIVEL COMPLETADO!</div>
+
+    <!-- Portada -->
+    <div id="startup-screen" class="modal-screen flex clickable px-6 text-center">
+        <div class="mb-8">
+            <h1 class="text-6xl font-military text-red-600 drop-shadow-2xl">SURVIVOR OPS</h1>
+            <h2 class="text-xl font-game text-white tracking-[0.4em] bg-red-600/20 py-1">RED ZONE PRO</h2>
+        </div>
+        <div id="setup-ui" class="flex flex-col items-center w-full max-w-sm">
+            <div class="grid grid-cols-4 gap-3 mb-8 w-full">
+                <div onclick="selectAvatar(0)" id="av-0" class="avatar-card selected p-1 rounded-lg">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3408/3408545.png" class="w-full">
+                </div>
+                <div onclick="selectAvatar(1)" id="av-1" class="avatar-card p-1 rounded-lg">
+                    <img src="https://cdn-icons-png.flaticon.com/512/4140/4140037.png" class="w-full">
+                </div>
+                <div onclick="selectAvatar(2)" id="av-2" class="avatar-card p-1 rounded-lg">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1154/1154443.png" class="w-full">
+                </div>
+                <div onclick="selectAvatar(3)" id="av-3" class="avatar-card p-1 rounded-lg">
+                    <img src="https://cdn-icons-png.flaticon.com/512/606/606553.png" class="w-full">
+                </div>
+            </div>
+            <input id="player-name-input" type="text" maxlength="12" placeholder="ID DEL AGENTE" class="w-full bg-black/60 border-2 border-red-900/50 text-white p-4 rounded-xl text-center font-bold outline-none uppercase tracking-widest mb-4">
+            <button onclick="startGame(false)" class="w-full bg-red-700 text-white font-military py-5 rounded-xl text-xl hover:bg-red-600 shadow-xl transition-all">INICIAR OPERACIÓN</button>
+        </div>
+    </div>
+
+    <!-- Mini Mapa -->
+    <div id="mini-map">
+        <canvas id="mapCanvas" width="140" height="140"></canvas>
+    </div>
+
+    <!-- HUD -->
+    <div class="ui-layer p-4 flex flex-col justify-between">
+        <div class="flex justify-between items-start">
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-3">
+                    <div id="lives-display" class="text-2xl drop-shadow-md">❤️❤️❤️</div>
+                    <button onclick="togglePause()" class="clickable bg-black/50 p-2 rounded-lg border border-white/20 text-sm">PAUSA</button>
+                </div>
+                <div class="w-48 h-3 bg-black rounded-full border border-white/10 overflow-hidden relative">
+                    <div id="hp-bar" class="h-full bg-red-600 transition-all"></div>
+                </div>
+                <div id="status-container" class="flex flex-col items-start gap-1"></div>
+            </div>
+
+            <div class="flex flex-col items-end gap-2">
+                <div class="bg-black/60 p-2 px-4 rounded-xl border border-red-500/20 text-right">
+                    <div class="text-[8px] font-bold text-red-500 uppercase tracking-widest">Objetivo: <span id="objective-desc">LIMPIEZA</span></div>
+                    <div id="level-display" class="text-xl font-military text-white">NV. 01</div>
+                </div>
+                <div class="relative">
+                    <button onclick="quickSwapWeapon()" class="clickable bg-zinc-900 w-16 h-16 rounded-xl border-2 border-zinc-700 shadow-xl flex items-center justify-center text-3xl transition-transform active:scale-90">
+                        <span id="weapon-icon-btn">🔫</span>
+                    </button>
+                    <div id="ammo-count" class="absolute -bottom-1 -left-1 bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded border border-white">60</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-end">
+            <div class="ml-40 bg-black/60 p-2 px-4 rounded-lg border border-white/5">
+                <div class="text-[8px] text-zinc-400 font-bold uppercase">Zombis Abatidos</div>
+                <div id="total-kills-val" class="text-lg font-military text-green-500">0</div>
+            </div>
+            
+            <div class="flex flex-col items-end gap-3">
+                <div class="bg-black/60 p-2 px-4 rounded-lg text-right">
+                    <div class="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">SCORE</div>
+                    <div id="score-val" class="text-lg font-military text-amber-500">00000</div>
+                </div>
+                <div id="action-btn" class="clickable select-none transition-all active:scale-75">💥</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over -->
+    <div id="game-over" class="modal-screen clickable">
+        <h2 class="text-5xl font-military mb-4 text-red-700 uppercase">MISIÓN FALLIDA</h2>
+        <div id="final-stats" class="text-white mb-6 text-center text-sm font-mono"></div>
+        <button onclick="location.reload()" class="bg-white text-black font-military py-4 px-12 rounded-xl text-lg">REINTENTAR</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const mapCanvas = document.getElementById('mapCanvas');
+    const mctx = mapCanvas.getContext('2d');
+    
+    // --- ASSETS ---
+    const ZOMBIE_IMGS = ['zombie1.png', 'zombie2.png', 'zombie3.png'];
+    const ASSETS = {
+        hospital: 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png',
+        refuge: 'https://cdn-icons-png.flaticon.com/512/2590/2590525.png',
+        ammobox: 'https://cdn-icons-png.flaticon.com/512/6124/6124119.png',
+        hero: [
+            'https://cdn-icons-png.flaticon.com/512/3408/3408545.png',
+            'https://cdn-icons-png.flaticon.com/512/4140/4140037.png',
+            'https://cdn-icons-png.flaticon.com/512/1154/1154443.png',
+            'https://cdn-icons-png.flaticon.com/512/606/606553.png'
+        ]
+    };
+
+    const WEAPONS = {
+        PISTOL: { icon: '🔫', speed: 22, damage: 130, delay: 180, ammo: 80, maxAmmo: 120, color: '#fbbf24' },
+        PLASMA: { icon: '🔥', speed: 30, damage: 95, delay: 70, ammo: 200, maxAmmo: 300, color: '#22d3ee' },
+        GRENADE: { icon: '💣', speed: 12, damage: 4000, delay: 1500, ammo: 8, maxAmmo: 12, color: '#ef4444', isGrenade: true }
+    };
+
+    let images = { zombies: [] };
+    let player, entities = [], bullets = [], buildings = [], items = [], grenades = [], splatters = [];
+    let camera = { x: 0, y: 0, zoom: 0.9, angle: 0.15 }; // Ángulo leve de perspectiva
+    let keys = {}, touchMove = { x: 0, y: 0 }, touchStart = null, pinchDist = null;
+    let isGameOver = false, isPaused = false, score = 0, kills = 0, totalKills = 0, targetKills = 100, currentLvl = 1;
+    let activeWKey = 'PISTOL', selectedAvatarIdx = 0, isFiring = false, lastFire = 0;
+
+    class Entity {
+        constructor(x, y, config) {
+            this.x = x; this.y = y;
+            this.isPlayer = config.isPlayer || false;
+            this.team = config.team || 'zombie';
+            this.radius = config.radius || 25;
+            this.maxHp = config.hp || 100;
+            this.hp = this.maxHp;
+            this.speed = config.speed || 4;
+            this.damage = config.damage || 5;
+            this.angle = 0;
+            this.zImgIdx = Math.floor(Math.random() * 3);
+            this.invul = 0;
+            this.active = true;
+            this.inRefuge = false;
+        }
+
+        update() {
+            if (this.invul > 0) this.invul--;
+            if (this.isPlayer) { this.checkBuildings(); this.checkItems(); this.autoAim(); }
+            else if (this.team === 'zombie') this.aiZombie();
+        }
+
+        checkBuildings() {
+            let foundRefuge = false;
+            buildings.forEach(b => {
+                let d = Math.hypot(this.x - b.x, this.y - b.y);
+                if (d < b.radius + 20) {
+                    if (b.type === 'hospital' && this.hp < this.maxHp) this.hp += 1;
+                    if (b.type === 'refuge') {
+                        if (b.cooldown > 0) return;
+                        foundRefuge = true; b.timer++;
+                        // RECARGA DOBLE DE RÁPIDO (cada 15 frames en vez de 30)
+                        if (b.timer % 15 === 0) {
+                            Object.keys(WEAPONS).forEach(w => {
+                                if (WEAPONS[w].ammo < WEAPONS[w].maxAmmo) WEAPONS[w].ammo++;
+                            });
+                            updateHUD();
+                        }
+                        if (b.timer >= 600) { b.cooldown = 3600; b.timer = 0; }
+                    }
+                } else if (b.type === 'refuge' && b.timer > 0) { b.cooldown = 3600; b.timer = 0; }
+            });
+            this.inRefuge = foundRefuge;
+            this.renderStatus();
+        }
+
+        checkItems() {
+            items.forEach((it, i) => {
+                if (Math.hypot(this.x - it.x, this.y - it.y) < this.radius + 25) {
+                    if (it.type === 'ammo') {
+                        Object.keys(WEAPONS).forEach(w => {
+                            WEAPONS[w].ammo = Math.min(WEAPONS[w].maxAmmo, WEAPONS[w].ammo + 20);
+                        });
+                        updateHUD();
+                    }
+                    items.splice(i, 1);
+                }
+            });
+        }
+
+        autoAim() {
+            let nearest = null, minDist = 800;
+            entities.forEach(e => {
+                if (e.active && e.team === 'zombie') {
+                    let d = Math.hypot(e.x - this.x, e.y - this.y);
+                    if (d < minDist) { minDist = d; nearest = e; }
+                }
+            });
+            if (nearest) this.angle = Math.atan2(nearest.y - this.y, nearest.x - this.x);
+        }
+
+        aiZombie() {
+            if (player.inRefuge) {
+                this.x += Math.cos(this.angle) * this.speed * 0.2;
+                if (Math.random() < 0.02) this.angle = Math.random() * Math.PI * 2;
+                return;
+            }
+            this.angle = Math.atan2(player.y - this.y, player.x - this.x);
+            this.x += Math.cos(this.angle) * this.speed;
+            this.y += Math.sin(this.angle) * this.speed;
+            if (Math.hypot(player.x - this.x, player.y - this.y) < this.radius + player.radius) player.takeDamage(this.damage);
+        }
+
+        takeDamage(amt) {
+            if (this.invul > 0 || this.inRefuge) return;
+            this.hp -= amt;
+            if (this.isPlayer) {
+                this.invul = 45;
+                document.getElementById('blood-vignette').classList.add('damage-taken');
+                setTimeout(() => document.getElementById('blood-vignette').classList.remove('damage-taken'), 300);
+            }
+            if (this.hp <= 0) {
+                if (this.isPlayer) endGame(); else { this.active = false; onDeath(this); }
+            }
+            if (this.isPlayer) updateHUD();
+        }
+
+        renderStatus() {
+            let html = '';
+            if (this.inRefuge) html += '<div class="status-badge recharging">Suministros Bunker...</div>';
+            if (this.hp < this.maxHp * 0.5) html += '<div class="status-badge bg-red-800">Daño Crítico</div>';
+            document.getElementById('status-container').innerHTML = html;
+        }
+
+        draw() {
+            const sx = (this.x - camera.x) * camera.zoom;
+            const sy = (this.y - camera.y) * camera.zoom;
+            const size = (this.radius * 2) * camera.zoom;
+            if (sx < -size || sx > canvas.width + size || sy < -size || sy > canvas.height + size) return;
+
+            // Sombra/Ángulo
+            ctx.save();
+            ctx.translate(sx, sy);
+            ctx.scale(1, 1 - camera.angle); // Efecto de ángulo inclinado
+
+            if (this.invul > 0 || this.inRefuge) {
+                ctx.beginPath(); ctx.arc(0,0, size/1.3, 0, Math.PI*2);
+                ctx.strokeStyle = this.inRefuge ? '#3b82f6' : '#ef4444';
+                ctx.lineWidth = 3; ctx.stroke();
+            }
+
+            ctx.rotate(this.angle + Math.PI/2);
+            let img = this.isPlayer ? images.hero[selectedAvatarIdx] : images.zombies[this.zImgIdx];
+            if (img && img.complete) ctx.drawImage(img, -size/2, -size/2, size, size);
+            else { ctx.fillStyle = this.isPlayer ? '#3b82f6' : '#10b981'; ctx.beginPath(); ctx.arc(0,0,size/2,0,Math.PI*2); ctx.fill(); }
+            ctx.restore();
+        }
+    }
+
+    function onDeath(e) {
+        kills++; totalKills++;
+        score += 500 * currentLvl;
+        if (kills >= targetKills) {
+            currentLvl++; targetKills += 50; kills = 0;
+            const anim = document.getElementById('level-up-text');
+            anim.style.opacity = '1'; setTimeout(() => anim.style.opacity = '0', 2500);
+            player.hp = player.maxHp;
+        }
+        if (Math.random() < 0.15) items.push({ x: e.x, y: e.y, type: 'ammo' });
+        updateHUD();
+    }
+
+    function startGame(resume) {
+        document.getElementById('startup-screen').style.display = 'none';
+        player = new Entity(0, 0, { isPlayer: true, hp: 450, speed: 7.8 });
+        entities = []; bullets = []; buildings = []; items = []; grenades = [];
+        isGameOver = false; currentLvl = 1; score = 0; totalKills = 0;
+        
+        for(let i=0; i<3; i++) spawnBuilding('hospital');
+        for(let i=0; i<3; i++) spawnBuilding('refuge');
+        
+        updateHUD();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function spawnBuilding(type) {
+        let a = Math.random()*Math.PI*2, d = 1200 + Math.random()*2500;
+        buildings.push({ x: Math.cos(a)*d, y: Math.sin(a)*d, type: type, radius: 130, img: images[type], timer: 0, cooldown: 0 });
+    }
+
+    function spawnBullet(owner, angle) {
+        let w = WEAPONS[activeWKey];
+        if (w.isGrenade) {
+            grenades.push({ x: owner.x, y: owner.y, vx: Math.cos(angle)*w.speed, vy: Math.sin(angle)*w.speed, timer: 180, radius: 0, maxRadius: 400, exploded: false });
+        } else {
+            bullets.push({ x: owner.x, y: owner.y, vx: Math.cos(angle)*w.speed, vy: Math.sin(angle)*w.speed, damage: w.damage + (currentLvl*15), color: w.color, life: 100 });
+        }
+    }
+
+    function updateLogic() {
+        let vx = 0, vy = 0;
+        if (keys['w']) vy = -1; if (keys['s']) vy = 1; if (keys['a']) vx = -1; if (keys['d']) vx = 1;
+        if (touchMove.x || touchMove.y) { vx = touchMove.x; vy = touchMove.y; }
+
+        if (vx || vy) {
+            let m = Math.hypot(vx, vy);
+            player.x += (vx/m) * player.speed; player.y += (vy/m) * player.speed;
+        }
+
+        camera.x = player.x - (canvas.width/2)/camera.zoom;
+        camera.y = player.y - (canvas.height/2)/camera.zoom;
+
+        if (isFiring && Date.now() - lastFire > WEAPONS[activeWKey].delay) {
+            if (WEAPONS[activeWKey].ammo > 0) {
+                spawnBullet(player, player.angle);
+                WEAPONS[activeWKey].ammo--;
+                lastFire = Date.now();
+                updateHUD();
+            }
+        }
+
+        buildings.forEach(b => { if (b.cooldown > 0) b.cooldown--; });
+
+        bullets.forEach((b, i) => {
+            b.x += b.vx; b.y += b.vy; b.life--;
+            entities.forEach(e => { if (e.active && Math.hypot(b.x-e.x, b.y-e.y) < e.radius) { e.takeDamage(b.damage); b.life = 0; } });
+            if (b.life <= 0) bullets.splice(i, 1);
+        });
+
+        grenades.forEach((g, i) => {
+            if (!g.exploded) {
+                g.x += g.vx; g.y += g.vy; g.vx *= 0.97; g.vy *= 0.97; g.timer--;
+                if (g.timer <= 0) g.exploded = true;
+            } else {
+                g.radius += 18;
+                entities.forEach(e => { if (e.active && Math.hypot(g.x-e.x, g.y-e.y) < g.radius) e.takeDamage(100); });
+                if (g.radius >= g.maxRadius) grenades.splice(i, 1);
+            }
+        });
+
+        if (entities.filter(e => e.active).length < (40 + currentLvl*20) && Math.random() < 0.1) {
+            let a = Math.random()*Math.PI*2, d = 1800;
+            entities.push(new Entity(player.x + Math.cos(a)*d, player.y + Math.sin(a)*d, { speed: 3 + Math.random()*2, hp: 150 * currentLvl, damage: 15 + currentLvl*5 }));
+        }
+
+        player.update();
+        entities.forEach(e => e.update());
+        entities = entities.filter(e => e.active);
+    }
+
+    function draw() {
+        ctx.fillStyle = '#050505'; ctx.fillRect(0,0,canvas.width, canvas.height);
+        
+        // Grid
+        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+        let s = 120 * camera.zoom;
+        for(let x=(-camera.x*camera.zoom)%s; x<canvas.width; x+=s){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
+        for(let y=(-camera.y*camera.zoom)%s; y<canvas.height; y+=s){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
+
+        buildings.forEach(b => {
+            let sx = (b.x-camera.x)*camera.zoom, sy = (b.y-camera.y)*camera.zoom, sz = b.radius*2.3*camera.zoom;
+            if (b.cooldown > 0) ctx.globalAlpha = 0.3;
+            ctx.drawImage(b.img, sx-sz/2, sy-sz/2, sz, sz * (1-camera.angle));
+            ctx.globalAlpha = 1;
+        });
+
+        items.forEach(it => {
+            let sx = (it.x-camera.x)*camera.zoom, sy = (it.y-camera.y)*camera.zoom, sz = 40*camera.zoom;
+            ctx.drawImage(images.ammobox, sx-sz/2, sy-sz/2, sz, sz);
+        });
+
+        bullets.forEach(b => {
+            ctx.fillStyle = b.color; ctx.beginPath(); ctx.arc((b.x-camera.x)*camera.zoom, (b.y-camera.y)*camera.zoom, 5*camera.zoom, 0, Math.PI*2); ctx.fill();
+        });
+
+        grenades.forEach(g => {
+            let sx = (g.x-camera.x)*camera.zoom, sy = (g.y-camera.y)*camera.zoom;
+            if (!g.exploded) {
+                ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(sx, sy, 8*camera.zoom, 0, Math.PI*2); ctx.fill();
+            } else {
+                ctx.beginPath(); ctx.arc(sx, sy, g.radius*camera.zoom, 0, Math.PI*2);
+                ctx.fillStyle = `rgba(255, 120, 0, ${1 - g.radius/g.maxRadius})`; ctx.fill();
+            }
+        });
+
+        entities.forEach(e => e.draw());
+        player.draw();
+        
+        drawMinimap();
+    }
+
+    function drawMinimap() {
+        mctx.fillStyle = 'rgba(0, 30, 0, 0.8)'; mctx.fillRect(0,0,140,140);
+        const scale = 0.02; // Zoom del mapa
+        const cx = 70, cy = 70;
+        
+        // Player
+        mctx.fillStyle = 'white'; mctx.fillRect(cx-2, cy-2, 4, 4);
+        
+        // Refugios (Azules)
+        buildings.forEach(b => {
+            let mx = cx + (b.x - player.x) * scale;
+            let my = cy + (b.y - player.y) * scale;
+            if (mx > 0 && mx < 140 && my > 0 && my < 140) {
+                mctx.fillStyle = b.type === 'hospital' ? '#10b981' : '#3b82f6';
+                mctx.beginPath(); mctx.arc(mx, my, 4, 0, Math.PI*2); mctx.fill();
+            }
+        });
+
+        // Zombies (Puntos Verdes como pidió el usuario)
+        mctx.fillStyle = '#00ff00';
+        entities.forEach(e => {
+            let mx = cx + (e.x - player.x) * scale;
+            let my = cy + (e.y - player.y) * scale;
+            if (mx > 0 && mx < 140 && my > 0 && my < 140) {
+                mctx.fillRect(mx-1, my-1, 2, 2);
+            }
+        });
+    }
+
+    function gameLoop() {
+        if (!isGameOver) {
+            if (!isPaused) updateLogic();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+    }
+
+    function updateHUD() {
+        document.getElementById('lives-display').innerText = "❤️".repeat(3);
+        document.getElementById('hp-bar').style.width = `${(player.hp/player.maxHp)*100}%`;
+        document.getElementById('score-val').innerText = score.toString().padStart(6, '0');
+        document.getElementById('level-display').innerText = `NV. ${currentLvl.toString().padStart(2, '0')}`;
+        document.getElementById('total-kills-val').innerText = totalKills;
+        document.getElementById('weapon-icon-btn').innerText = WEAPONS[activeWKey].icon;
+        document.getElementById('ammo-count').innerText = WEAPONS[activeWKey].ammo;
+    }
+
+    window.selectAvatar = (idx) => {
+        selectedAvatarIdx = idx;
+        document.querySelectorAll('.avatar-card').forEach((c, i) => c.classList.toggle('selected', i === idx));
+    };
+
+    window.togglePause = () => { isPaused = !isPaused; };
+    window.quickSwapWeapon = () => { 
+        let keys = Object.keys(WEAPONS);
+        let idx = keys.indexOf(activeWKey);
+        activeWKey = keys[(idx + 1) % keys.length];
+        updateHUD();
+    };
+
+    function endGame() {
+        isGameOver = true;
+        document.getElementById('game-over').style.display = 'flex';
+        document.getElementById('final-stats').innerText = `NV: ${currentLvl} | BAJAS: ${totalKills} | SCORE: ${score}`;
+    }
+
+    window.onload = () => {
+        // Carga de imágenes específicas
+        ZOMBIE_IMGS.forEach(src => { let i = new Image(); i.src = src; images.zombies.push(i); });
+        Object.keys(ASSETS).forEach(k => {
+            if (Array.isArray(ASSETS[k])) images[k] = ASSETS[k].map(u => { let i = new Image(); i.src = u; return i; });
+            else { images[k] = new Image(); images[k].src = ASSETS[k]; }
+        });
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    };
+
+    // INPUTS
+    const bAct = document.getElementById('action-btn');
+    bAct.addEventListener('touchstart', (e) => { isFiring = true; e.preventDefault(); });
+    bAct.addEventListener('touchend', () => isFiring = false);
+    bAct.addEventListener('mousedown', () => isFiring = true);
+    bAct.addEventListener('mouseup', () => isFiring = false);
+
+    canvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        else pinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    });
+    canvas.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1 && touchStart) {
+            const dx = e.touches[0].clientX - touchStart.x, dy = e.touches[0].clientY - touchStart.y;
+            const d = Math.hypot(dx, dy); if (d > 10) touchMove = { x: dx/d, y: dy/d };
+        } else if (e.touches.length === 2 && pinchDist) {
+            const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            camera.zoom = Math.max(0.4, Math.min(1.8, camera.zoom * (d/pinchDist))); pinchDist = d;
+        }
+    });
+    canvas.addEventListener('touchend', () => { touchStart = null; touchMove = { x: 0, y: 0 }; pinchDist = null; });
+    window.onkeydown = (e) => keys[e.key.toLowerCase()] = true; window.onkeyup = (e) => keys[e.key.toLowerCase()] = false;
+</script>
+</body>
+</html>
+
