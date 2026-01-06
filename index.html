@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Airport Tycoon 3D - Infinito</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Incluimos OrbitControls para el manejo de cámara profesional -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; touch-action: none; }
+        canvas { display: block; }
+        
+        #construction-menu {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 100;
+        }
+
+        .dropdown-content {
+            display: none;
+            flex-direction: column;
+            background: rgba(17, 24, 39, 0.95);
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 10px;
+            min-width: 220px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .dropdown-content.show { display: flex; }
+
+        .btn-tool {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 6px;
+            background: #1f2937;
+            border: 1px solid #4b5563;
+            border-radius: 8px;
+            color: white;
+            text-align: left;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-tool.active { border-color: #3b82f6; background: #1e3a8a; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+
+        #ui-stats {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 12px 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            pointer-events: none;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        #selection-card {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(17, 24, 39, 0.95);
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid #3b82f6;
+            display: none;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+        }
+
+        .status-bar-container {
+            width: 100%;
+            height: 10px;
+            background: #374151;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .status-bar-fill { height: 100%; width: 100%; transition: width 0.3s ease; }
+    </style>
+</head>
+<body>
+
+<div id="ui-stats">
+    <p class="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Presupuesto</p>
+    <p class="text-2xl font-mono text-green-400" id="money-display">$10,000</p>
+</div>
+
+<div id="construction-menu">
+    <button onclick="toggleMenu()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-2xl shadow-xl flex items-center gap-2 transition-transform active:scale-95">
+        🏗️ Menú <span id="menu-arrow">▼</span>
+    </button>
+    <div id="tools-dropdown" class="dropdown-content">
+        <button class="btn-tool active" onclick="setTool('select', this)"><span>🖱️</span> Mover Cámara / Seleccionar</button>
+        <hr class="border-gray-700 my-2">
+        <button class="btn-tool" onclick="setTool('runway', this)"><span>🛤️</span> Pista ($500)</button>
+        <button class="btn-tool" onclick="setTool('platform', this)"><span>🏗️</span> Plataforma ($300)</button>
+        <button class="btn-tool" onclick="setTool('office', this)"><span>🏢</span> Oficina ($1000)</button>
+        <button class="btn-tool" onclick="setTool('fuel', this)"><span>⛽</span> Estación Comb. ($800)</button>
+        <button class="btn-tool text-red-400" onclick="setTool('grass', this)"><span>🌱</span> Demoler</button>
+        <hr class="border-gray-700 my-2">
+        <p class="text-gray-500 text-[10px] uppercase mb-2">Vehículos</p>
+        <div class="grid grid-cols-2 gap-2">
+            <button class="bg-gray-800 p-3 rounded-lg text-[10px] hover:bg-gray-700" onclick="buyVehicle('tug')">🚜 Remolque ($400)</button>
+            <button class="bg-gray-800 p-3 rounded-lg text-[10px] hover:bg-gray-700" onclick="buyVehicle('fuel_truck')">🚛 Cisterna ($600)</button>
+        </div>
+    </div>
+</div>
+
+<div id="selection-card">
+    <div class="flex justify-between items-start mb-4">
+        <div>
+            <p id="sel-name" class="font-bold text-lg text-blue-400"></p>
+            <p class="text-xs text-gray-400">Estado del Vehículo</p>
+        </div>
+        <button onclick="closeSelection()" class="text-gray-500">✕</button>
+    </div>
+    <div class="grid grid-cols-1 gap-4">
+        <div>
+            <div class="flex justify-between text-[10px] text-gray-400 mb-1">
+                <span>COMBUSTIBLE</span>
+                <span id="txt-fuel">100%</span>
+            </div>
+            <div class="status-bar-container"><div id="sel-fuel" class="status-bar-fill bg-yellow-500"></div></div>
+        </div>
+        <div>
+            <div class="flex justify-between text-[10px] text-gray-400 mb-1">
+                <span>MANTENIMIENTO</span>
+                <span id="txt-maint">100%</span>
+            </div>
+            <div class="status-bar-container"><div id="sel-maint" class="status-bar-fill bg-red-500"></div></div>
+        </div>
+    </div>
+    <div class="flex gap-2 mt-6">
+        <button class="flex-1 bg-blue-600 text-white py-3 rounded-xl text-sm font-bold active:bg-blue-700" onclick="autoTask()">Auto-Tarea</button>
+        <button class="flex-1 bg-gray-700 text-white py-3 rounded-xl text-sm font-bold active:bg-gray-800" onclick="sendToRefuel()">Repostar</button>
+    </div>
+</div>
+
+<script>
+    // --- Configuración Global ---
+    let scene, camera, renderer, raycaster, mouse, controls;
+    let gridMap = new Map(); // Mapa para el mundo infinito
+    const TILE_SIZE = 4;
+    const VIEW_RADIUS = 8; // Cuántos tiles generar alrededor de la cámara
+    let money = 10000;
+    let currentTool = 'select';
+    let selectedVehicle = null;
+    let vehicles = [];
+
+    const COLORS = {
+        grass: 0x4ade80,
+        tree: 0x22c55e,
+        runway: 0x333333,
+        platform: 0x64748b,
+        office: 0x1d4ed8,
+        fuel: 0xd97706
+    };
+
+    const PRICES = { runway: 500, platform: 300, office: 1000, fuel: 800, grass: 0 };
+
+    // --- Inicialización ---
+    window.onload = function() {
+        initThree();
+        initControls();
+        animate();
+        
+        window.addEventListener('resize', onWindowResize);
+        window.addEventListener('pointerdown', onPointerDown); // Mejor compatibilidad táctil
+    };
+
+    function initThree() {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xa5f3fc); // Azul cielo claro
+        scene.fog = new THREE.Fog(0xa5f3fc, 20, 100);
+
+        camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(30, 30, 30);
+        
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(50, 100, 50);
+        light.castShadow = true;
+        light.shadow.camera.left = -100;
+        light.shadow.camera.right = 100;
+        light.shadow.camera.top = 100;
+        light.shadow.camera.bottom = -100;
+        scene.add(light);
+        
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+
+        raycaster = new THREE.Raycaster();
+        mouse = new THREE.Vector2();
+    }
+
+    function initControls() {
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.screenSpacePanning = true; // Importante para mover el mapa deslizando
+        controls.minDistance = 10;
+        controls.maxDistance = 150;
+        controls.maxPolarAngle = Math.PI / 2.1; // Evitar ver debajo del suelo
+
+        // Configuración para que sea intuitivo en móviles
+        controls.mouseButtons = {
+            LEFT: THREE.MOUSE.PAN, // Un dedo arrastra el suelo
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: THREE.MOUSE.ROTATE // Click derecho o dos dedos rotan
+        };
+        
+        controls.touches = {
+            ONE: THREE.TOUCH.PAN, // Un dedo desliza el mapa
+            TWO: THREE.TOUCH.DOLLY_ROTATE // Dos dedos zoom y rotación
+        };
+    }
+
+    // --- Gestión de Mapa Infinito ---
+    function updateInfiniteMap() {
+        // Obtenemos hacia donde mira la cámara en el suelo
+        const center = new THREE.Vector3();
+        controls.target.clone().project(camera); 
+        const target = controls.target;
+
+        const centerX = Math.round(target.x / TILE_SIZE);
+        const centerZ = Math.round(target.z / TILE_SIZE);
+
+        for (let x = centerX - VIEW_RADIUS; x <= centerX + VIEW_RADIUS; x++) {
+            for (let z = centerZ - VIEW_RADIUS; z <= centerZ + VIEW_RADIUS; z++) {
+                const key = `${x},${z}`;
+                if (!gridMap.has(key)) {
+                    createTile(x, z);
+                }
+            }
+        }
+    }
+
+    function createTile(x, z) {
+        const geometry = new THREE.BoxGeometry(TILE_SIZE - 0.1, 0.2, TILE_SIZE - 0.1);
+        const material = new THREE.MeshStandardMaterial({ color: COLORS.grass });
+        const tile = new THREE.Mesh(geometry, material);
+        
+        const posX = x * TILE_SIZE;
+        const posZ = z * TILE_SIZE;
+        tile.position.set(posX, 0, posZ);
+        tile.userData = { type: 'grass', gridX: x, gridZ: z };
+        tile.receiveShadow = true;
+        
+        scene.add(tile);
+        gridMap.set(`${x},${z}`, tile);
+
+        // Árboles aleatorios solo en pasto
+        if (Math.random() > 0.96) {
+            createTree(posX, posZ);
+        }
+    }
+
+    function createTree(x, z) {
+        const trunk = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.15, 0.15, 0.8),
+            new THREE.MeshStandardMaterial({ color: 0x4b2c20 })
+        );
+        trunk.position.set(x, 0.4, z);
+        
+        const leaves = new THREE.Mesh(
+            new THREE.SphereGeometry(0.6),
+            new THREE.MeshStandardMaterial({ color: 0x166534 })
+        );
+        leaves.position.set(x, 1, z);
+        
+        scene.add(trunk);
+        scene.add(leaves);
+    }
+
+    // --- Interacción ---
+    function onPointerDown(event) {
+        if (event.target.closest('#construction-menu') || event.target.closest('#selection-card') || event.target.closest('#ui-stats')) return;
+
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(scene.children, true);
+
+        if (intersects.length > 0) {
+            const hit = intersects[0];
+            
+            // Buscar si es un vehículo (recorriendo hacia arriba en el grupo)
+            let obj = hit.object;
+            let vehicleFound = null;
+            while(obj) {
+                if(obj.userData && obj.userData.isVehicle) {
+                    vehicleFound = vehicles.find(v => v.id === obj.userData.id);
+                    break;
+                }
+                obj = obj.parent;
+            }
+
+            if (vehicleFound && currentTool === 'select') {
+                selectVehicle(vehicleFound);
+                controls.enableRotate = false; // Bloquear rotación mientras se selecciona para evitar saltos
+                setTimeout(() => controls.enableRotate = true, 100);
+                return;
+            }
+
+            // Si es un tile del suelo
+            const tile = intersects.find(i => i.object.userData && i.object.userData.gridX !== undefined);
+            if (tile) {
+                const data = tile.object.userData;
+                if (currentTool === 'select') {
+                    if (selectedVehicle) {
+                        selectedVehicle.targetPos.set(tile.object.position.x, 0.5, tile.object.position.z);
+                    }
+                } else {
+                    buildAt(data.gridX, data.gridZ);
+                }
+            }
+        }
+    }
+
+    function buildAt(x, z) {
+        const key = `${x},${z}`;
+        const tile = gridMap.get(key);
+        if (!tile) return;
+
+        const price = PRICES[currentTool];
+        if (money >= price) {
+            updateMoney(-price);
+            tile.material.color.set(COLORS[currentTool]);
+            tile.userData.type = currentTool;
+            
+            // Efecto visual de construcción
+            if (currentTool === 'office') {
+                tile.scale.y = 15;
+                tile.position.y = 1.5;
+            } else {
+                tile.scale.y = 1;
+                tile.position.y = 0;
+            }
+        }
+    }
+
+    function buyVehicle(type) {
+        const price = type === 'tug' ? 400 : 600;
+        if (money < price) return;
+        updateMoney(-price);
+
+        const group = new THREE.Group();
+        group.userData = { isVehicle: true, id: Date.now() };
+        
+        const body = new THREE.Mesh(
+            new THREE.BoxGeometry(0.8, 0.5, 1.2),
+            new THREE.MeshStandardMaterial({ color: type === 'tug' ? 0xfacc15 : 0xf1f5f9 })
+        );
+        body.position.y = 0.25;
+        body.castShadow = true;
+        group.add(body);
+
+        const cab = new THREE.Mesh(
+            new THREE.BoxGeometry(0.7, 0.4, 0.5),
+            new THREE.MeshStandardMaterial({ color: 0x1e293b })
+        );
+        cab.position.set(0, 0.6, 0.3);
+        group.add(cab);
+
+        // Posición inicial cerca de la cámara
+        const spawnPos = controls.target.clone();
+        group.position.set(spawnPos.x, 0.5, spawnPos.z);
+        scene.add(group);
+
+        const vData = {
+            id: group.userData.id,
+            mesh: group,
+            targetPos: group.position.clone(),
+            fuel: 100,
+            maint: 100,
+            type: type,
+            speed: 0.12
+        };
+
+        vehicles.push(vData);
+        selectVehicle(vData);
+    }
+
+    // --- UI Control ---
+    function toggleMenu() {
+        const dropdown = document.getElementById('tools-dropdown');
+        dropdown.classList.toggle('show');
+        document.getElementById('menu-arrow').innerText = dropdown.classList.contains('show') ? '▲' : '▼';
+    }
+
+    function setTool(tool, btn) {
+        currentTool = tool;
+        document.querySelectorAll('.btn-tool').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (tool !== 'select') {
+            closeSelection();
+        }
+    }
+
+    function selectVehicle(v) {
+        selectedVehicle = v;
+        const card = document.getElementById('selection-card');
+        card.style.display = 'block';
+        document.getElementById('sel-name').innerText = v.type === 'tug' ? '🚜 Remolcador' : '🚛 Cisterna';
+        updateSelectionUI();
+    }
+
+    function closeSelection() {
+        selectedVehicle = null;
+        document.getElementById('selection-card').style.display = 'none';
+    }
+
+    function updateSelectionUI() {
+        if (!selectedVehicle) return;
+        const f = Math.floor(selectedVehicle.fuel);
+        const m = Math.floor(selectedVehicle.maint);
+        document.getElementById('sel-fuel').style.width = f + '%';
+        document.getElementById('sel-maint').style.width = m + '%';
+        document.getElementById('txt-fuel').innerText = f + '%';
+        document.getElementById('txt-maint').innerText = m + '%';
+    }
+
+    function updateMoney(amount) {
+        money += amount;
+        document.getElementById('money-display').innerText = '$' + Math.floor(money).toLocaleString();
+    }
+
+    // --- Loop de Animación ---
+    function animate() {
+        requestAnimationFrame(animate);
+        
+        controls.update();
+        updateInfiniteMap();
+
+        vehicles.forEach(v => {
+            const dist = v.mesh.position.distanceTo(v.targetPos);
+            if (dist > 0.2) {
+                const direction = new THREE.Vector3().subVectors(v.targetPos, v.mesh.position).normalize();
+                v.mesh.position.add(direction.multiplyScalar(v.speed));
+                v.mesh.lookAt(v.targetPos.x, 0.5, v.targetPos.z);
+                
+                v.fuel -= 0.015;
+                v.maint -= 0.003;
+            }
+
+            // Detectar suelo debajo del vehículo
+            const gx = Math.round(v.mesh.position.x / TILE_SIZE);
+            const gz = Math.round(v.mesh.position.z / TILE_SIZE);
+            const tile = gridMap.get(`${gx},${gz}`);
+            
+            if (tile && tile.userData.type === 'fuel' && v.fuel < 100) {
+                v.fuel += 0.4;
+                updateMoney(-0.1);
+            }
+
+            if (v.fuel < 0) v.fuel = 0;
+        });
+
+        if (selectedVehicle) updateSelectionUI();
+        
+        renderer.render(scene, camera);
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function autoTask() {
+        if (!selectedVehicle) return;
+        // Mover a un punto aleatorio cercano
+        const randX = (Math.random() - 0.5) * 20 + selectedVehicle.mesh.position.x;
+        const randZ = (Math.random() - 0.5) * 20 + selectedVehicle.mesh.position.z;
+        selectedVehicle.targetPos.set(randX, 0.5, randZ);
+    }
+
+    function sendToRefuel() {
+        if (!selectedVehicle) return;
+        // Buscar la estación de combustible más cercana
+        let nearestFuel = null;
+        let minDist = Infinity;
+        
+        gridMap.forEach(tile => {
+            if (tile.userData.type === 'fuel') {
+                const d = tile.position.distanceTo(selectedVehicle.mesh.position);
+                if (d < minDist) {
+                    minDist = d;
+                    nearestFuel = tile.position;
+                }
+            }
+        });
+
+        if (nearestFuel) {
+            selectedVehicle.targetPos.copy(nearestFuel);
+            selectedVehicle.targetPos.y = 0.5;
+        } else {
+            alert("No hay estaciones de combustible construidas.");
+        }
+    }
+</script>
+
+</body>
+</html>
+
