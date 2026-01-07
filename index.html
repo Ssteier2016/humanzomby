@@ -54,9 +54,10 @@
         @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
         
         #mini-map {
-            position: absolute; bottom: 20px; left: 20px; width: 140px; height: 140px;
-            background: rgba(0, 20, 0, 0.7); border: 2px solid #00ff0055; border-radius: 10px;
+            position: absolute; bottom: 20px; left: 20px; width: 150px; height: 150px;
+            background: rgba(0, 15, 0, 0.85); border: 2px solid #00ff0044; border-radius: 12px;
             overflow: hidden; pointer-events: none; z-index: 20;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
         }
 
         .blood-overlay {
@@ -99,7 +100,7 @@
 
     <!-- Mini Mapa -->
     <div id="mini-map">
-        <canvas id="mapCanvas" width="140" height="140"></canvas>
+        <canvas id="mapCanvas" width="150" height="150"></canvas>
     </div>
 
     <!-- HUD -->
@@ -108,10 +109,10 @@
             <div class="flex flex-col gap-2">
                 <div class="flex items-center gap-3">
                     <div id="lives-display" class="text-2xl drop-shadow-md">❤️❤️❤️</div>
-                    <button onclick="togglePause()" class="clickable bg-black/50 p-2 rounded-lg border border-white/20 text-sm">PAUSA</button>
+                    <button onclick="togglePause()" class="clickable bg-black/50 p-2 px-3 rounded-lg border border-white/20 text-[10px] font-bold">PAUSA</button>
                 </div>
                 <div class="w-48 h-3 bg-black rounded-full border border-white/10 overflow-hidden relative">
-                    <div id="hp-bar" class="h-full bg-red-600 transition-all"></div>
+                    <div id="hp-bar" class="h-full bg-gradient-to-r from-red-600 to-orange-500 transition-all"></div>
                 </div>
                 <div id="status-container" class="flex flex-col items-start gap-1"></div>
             </div>
@@ -131,14 +132,17 @@
         </div>
 
         <div class="flex justify-between items-end">
-            <div class="ml-40 bg-black/60 p-2 px-4 rounded-lg border border-white/5">
-                <div class="text-[8px] text-zinc-400 font-bold uppercase">Zombis Abatidos</div>
-                <div id="total-kills-val" class="text-lg font-military text-green-500">0</div>
+            <div class="ml-[170px] bg-black/60 p-2 px-4 rounded-lg border border-white/5">
+                <div class="text-[8px] text-zinc-400 font-bold uppercase">Horda Abatida</div>
+                <div class="flex items-baseline gap-2">
+                    <span id="total-kills-val" class="text-lg font-military text-green-500">0</span>
+                    <span class="text-[10px] text-zinc-600">/ <span id="target-kills-val">100</span></span>
+                </div>
             </div>
             
             <div class="flex flex-col items-end gap-3">
                 <div class="bg-black/60 p-2 px-4 rounded-lg text-right">
-                    <div class="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">SCORE</div>
+                    <div class="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">EXP. ACUMULADA</div>
                     <div id="score-val" class="text-lg font-military text-amber-500">00000</div>
                 </div>
                 <div id="action-btn" class="clickable select-none transition-all active:scale-75">💥</div>
@@ -149,8 +153,8 @@
     <!-- Game Over -->
     <div id="game-over" class="modal-screen clickable">
         <h2 class="text-5xl font-military mb-4 text-red-700 uppercase">MISIÓN FALLIDA</h2>
-        <div id="final-stats" class="text-white mb-6 text-center text-sm font-mono"></div>
-        <button onclick="location.reload()" class="bg-white text-black font-military py-4 px-12 rounded-xl text-lg">REINTENTAR</button>
+        <div id="final-stats" class="text-white mb-6 text-center text-sm font-mono bg-red-900/20 p-4 rounded-xl border border-red-900/50"></div>
+        <button onclick="location.reload()" class="bg-white text-black font-military py-4 px-12 rounded-xl text-lg hover:bg-red-600 hover:text-white transition-colors">REINTENTAR OPERACIÓN</button>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -161,7 +165,7 @@
     const mapCanvas = document.getElementById('mapCanvas');
     const mctx = mapCanvas.getContext('2d');
     
-    // --- ASSETS ---
+    // --- CONFIGURACIÓN DE ASSETS ---
     const ZOMBIE_IMGS = ['zombie1.png', 'zombie2.png', 'zombie3.png'];
     const ASSETS = {
         hospital: 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png',
@@ -178,13 +182,13 @@
     const WEAPONS = {
         PISTOL: { icon: '🔫', speed: 22, damage: 130, delay: 180, ammo: 80, maxAmmo: 120, color: '#fbbf24' },
         PLASMA: { icon: '🔥', speed: 30, damage: 95, delay: 70, ammo: 200, maxAmmo: 300, color: '#22d3ee' },
-        GRENADE: { icon: '💣', speed: 12, damage: 4000, delay: 1500, ammo: 8, maxAmmo: 12, color: '#ef4444', isGrenade: true }
+        GRENADE: { icon: '💣', speed: 12, damage: 4500, delay: 1500, ammo: 8, maxAmmo: 12, color: '#ef4444', isGrenade: true }
     };
 
     let images = { zombies: [] };
-    let player, entities = [], bullets = [], buildings = [], items = [], grenades = [], splatters = [];
-    let camera = { x: 0, y: 0, zoom: 0.9, angle: 0.15 }; // Ángulo leve de perspectiva
-    let keys = {}, touchMove = { x: 0, y: 0 }, touchStart = null, pinchDist = null;
+    let player, entities = [], bullets = [], buildings = [], items = [], grenades = [];
+    let camera = { x: 0, y: 0, zoom: 0.95, angle: 0.12 }; 
+    let keys = {}, touchMove = { x: 0, y: 0 }, touchStart = null;
     let isGameOver = false, isPaused = false, score = 0, kills = 0, totalKills = 0, targetKills = 100, currentLvl = 1;
     let activeWKey = 'PISTOL', selectedAvatarIdx = 0, isFiring = false, lastFire = 0;
 
@@ -197,7 +201,7 @@
             this.maxHp = config.hp || 100;
             this.hp = this.maxHp;
             this.speed = config.speed || 4;
-            this.damage = config.damage || 5;
+            this.damage = config.damage || 8;
             this.angle = 0;
             this.zImgIdx = Math.floor(Math.random() * 3);
             this.invul = 0;
@@ -216,11 +220,11 @@
             buildings.forEach(b => {
                 let d = Math.hypot(this.x - b.x, this.y - b.y);
                 if (d < b.radius + 20) {
-                    if (b.type === 'hospital' && this.hp < this.maxHp) this.hp += 1;
+                    if (b.type === 'hospital' && this.hp < this.maxHp) this.hp += 1.2;
                     if (b.type === 'refuge') {
                         if (b.cooldown > 0) return;
                         foundRefuge = true; b.timer++;
-                        // RECARGA DOBLE DE RÁPIDO (cada 15 frames en vez de 30)
+                        // RECARGA DOBLE DE RÁPIDO (cada 15 frames)
                         if (b.timer % 15 === 0) {
                             Object.keys(WEAPONS).forEach(w => {
                                 if (WEAPONS[w].ammo < WEAPONS[w].maxAmmo) WEAPONS[w].ammo++;
@@ -237,10 +241,10 @@
 
         checkItems() {
             items.forEach((it, i) => {
-                if (Math.hypot(this.x - it.x, this.y - it.y) < this.radius + 25) {
+                if (Math.hypot(this.x - it.x, this.y - it.y) < this.radius + 30) {
                     if (it.type === 'ammo') {
                         Object.keys(WEAPONS).forEach(w => {
-                            WEAPONS[w].ammo = Math.min(WEAPONS[w].maxAmmo, WEAPONS[w].ammo + 20);
+                            WEAPONS[w].ammo = Math.min(WEAPONS[w].maxAmmo, WEAPONS[w].ammo + 25);
                         });
                         updateHUD();
                     }
@@ -250,7 +254,7 @@
         }
 
         autoAim() {
-            let nearest = null, minDist = 800;
+            let nearest = null, minDist = 900;
             entities.forEach(e => {
                 if (e.active && e.team === 'zombie') {
                     let d = Math.hypot(e.x - this.x, e.y - this.y);
@@ -267,8 +271,8 @@
                 return;
             }
             this.angle = Math.atan2(player.y - this.y, player.x - this.x);
-            this.x += Math.cos(this.angle) * this.speed;
-            this.y += Math.sin(this.angle) * this.speed;
+            this.x += Math.cos(this.angle) * (this.speed + (currentLvl * 0.1));
+            this.y += Math.sin(this.angle) * (this.speed + (currentLvl * 0.1));
             if (Math.hypot(player.x - this.x, player.y - this.y) < this.radius + player.radius) player.takeDamage(this.damage);
         }
 
@@ -276,7 +280,7 @@
             if (this.invul > 0 || this.inRefuge) return;
             this.hp -= amt;
             if (this.isPlayer) {
-                this.invul = 45;
+                this.invul = 50;
                 document.getElementById('blood-vignette').classList.add('damage-taken');
                 setTimeout(() => document.getElementById('blood-vignette').classList.remove('damage-taken'), 300);
             }
@@ -288,8 +292,8 @@
 
         renderStatus() {
             let html = '';
-            if (this.inRefuge) html += '<div class="status-badge recharging">Suministros Bunker...</div>';
-            if (this.hp < this.maxHp * 0.5) html += '<div class="status-badge bg-red-800">Daño Crítico</div>';
+            if (this.inRefuge) html += '<div class="status-badge recharging">Recarga Acelerada Bunker...</div>';
+            if (this.hp < this.maxHp * 0.4) html += '<div class="status-badge bg-red-900 border-red-500 animate-pulse">ESTADO CRÍTICO</div>';
             document.getElementById('status-container').innerHTML = html;
         }
 
@@ -299,35 +303,37 @@
             const size = (this.radius * 2) * camera.zoom;
             if (sx < -size || sx > canvas.width + size || sy < -size || sy > canvas.height + size) return;
 
-            // Sombra/Ángulo
             ctx.save();
             ctx.translate(sx, sy);
-            ctx.scale(1, 1 - camera.angle); // Efecto de ángulo inclinado
+            ctx.scale(1, 1 - camera.angle); 
 
             if (this.invul > 0 || this.inRefuge) {
-                ctx.beginPath(); ctx.arc(0,0, size/1.3, 0, Math.PI*2);
+                ctx.beginPath(); ctx.arc(0, 0, size/1.2, 0, Math.PI*2);
                 ctx.strokeStyle = this.inRefuge ? '#3b82f6' : '#ef4444';
-                ctx.lineWidth = 3; ctx.stroke();
+                ctx.lineWidth = 4; ctx.stroke();
             }
 
             ctx.rotate(this.angle + Math.PI/2);
             let img = this.isPlayer ? images.hero[selectedAvatarIdx] : images.zombies[this.zImgIdx];
             if (img && img.complete) ctx.drawImage(img, -size/2, -size/2, size, size);
-            else { ctx.fillStyle = this.isPlayer ? '#3b82f6' : '#10b981'; ctx.beginPath(); ctx.arc(0,0,size/2,0,Math.PI*2); ctx.fill(); }
+            else { 
+                ctx.fillStyle = this.isPlayer ? '#3b82f6' : '#10b981'; 
+                ctx.beginPath(); ctx.arc(0,0,size/2,0,Math.PI*2); ctx.fill(); 
+            }
             ctx.restore();
         }
     }
 
     function onDeath(e) {
         kills++; totalKills++;
-        score += 500 * currentLvl;
+        score += 600 * currentLvl;
         if (kills >= targetKills) {
             currentLvl++; targetKills += 50; kills = 0;
             const anim = document.getElementById('level-up-text');
-            anim.style.opacity = '1'; setTimeout(() => anim.style.opacity = '0', 2500);
+            anim.style.opacity = '1'; setTimeout(() => anim.style.opacity = '0', 3000);
             player.hp = player.maxHp;
         }
-        if (Math.random() < 0.15) items.push({ x: e.x, y: e.y, type: 'ammo' });
+        if (Math.random() < 0.2) items.push({ x: e.x, y: e.y, type: 'ammo' });
         updateHUD();
     }
 
@@ -335,7 +341,7 @@
         document.getElementById('startup-screen').style.display = 'none';
         player = new Entity(0, 0, { isPlayer: true, hp: 450, speed: 7.8 });
         entities = []; bullets = []; buildings = []; items = []; grenades = [];
-        isGameOver = false; currentLvl = 1; score = 0; totalKills = 0;
+        isGameOver = false; currentLvl = 1; score = 0; totalKills = 0; targetKills = 100;
         
         for(let i=0; i<3; i++) spawnBuilding('hospital');
         for(let i=0; i<3; i++) spawnBuilding('refuge');
@@ -345,16 +351,16 @@
     }
 
     function spawnBuilding(type) {
-        let a = Math.random()*Math.PI*2, d = 1200 + Math.random()*2500;
-        buildings.push({ x: Math.cos(a)*d, y: Math.sin(a)*d, type: type, radius: 130, img: images[type], timer: 0, cooldown: 0 });
+        let a = Math.random()*Math.PI*2, d = 1500 + Math.random()*2500;
+        buildings.push({ x: Math.cos(a)*d, y: Math.sin(a)*d, type: type, radius: 140, img: images[type], timer: 0, cooldown: 0 });
     }
 
     function spawnBullet(owner, angle) {
         let w = WEAPONS[activeWKey];
         if (w.isGrenade) {
-            grenades.push({ x: owner.x, y: owner.y, vx: Math.cos(angle)*w.speed, vy: Math.sin(angle)*w.speed, timer: 180, radius: 0, maxRadius: 400, exploded: false });
+            grenades.push({ x: owner.x, y: owner.y, vx: Math.cos(angle)*w.speed, vy: Math.sin(angle)*w.speed, timer: 180, radius: 0, maxRadius: 450, exploded: false });
         } else {
-            bullets.push({ x: owner.x, y: owner.y, vx: Math.cos(angle)*w.speed, vy: Math.sin(angle)*w.speed, damage: w.damage + (currentLvl*15), color: w.color, life: 100 });
+            bullets.push({ x: owner.x, y: owner.y, vx: Math.cos(angle)*w.speed, vy: Math.sin(angle)*w.speed, damage: w.damage + (currentLvl*15), color: w.color, life: 110 });
         }
     }
 
@@ -390,18 +396,18 @@
 
         grenades.forEach((g, i) => {
             if (!g.exploded) {
-                g.x += g.vx; g.y += g.vy; g.vx *= 0.97; g.vy *= 0.97; g.timer--;
+                g.x += g.vx; g.y += g.vy; g.vx *= 0.96; g.vy *= 0.96; g.timer--;
                 if (g.timer <= 0) g.exploded = true;
             } else {
-                g.radius += 18;
-                entities.forEach(e => { if (e.active && Math.hypot(g.x-e.x, g.y-e.y) < g.radius) e.takeDamage(100); });
+                g.radius += 16;
+                entities.forEach(e => { if (e.active && Math.hypot(g.x-e.x, g.y-e.y) < g.radius) e.takeDamage(75); });
                 if (g.radius >= g.maxRadius) grenades.splice(i, 1);
             }
         });
 
-        if (entities.filter(e => e.active).length < (40 + currentLvl*20) && Math.random() < 0.1) {
-            let a = Math.random()*Math.PI*2, d = 1800;
-            entities.push(new Entity(player.x + Math.cos(a)*d, player.y + Math.sin(a)*d, { speed: 3 + Math.random()*2, hp: 150 * currentLvl, damage: 15 + currentLvl*5 }));
+        if (entities.filter(e => e.active).length < (45 + currentLvl*22) && Math.random() < 0.12) {
+            let a = Math.random()*Math.PI*2, d = 1900;
+            entities.push(new Entity(player.x + Math.cos(a)*d, player.y + Math.sin(a)*d, { speed: 3.5 + Math.random()*2.5, hp: 160 * currentLvl, damage: 15 + currentLvl*6 }));
         }
 
         player.update();
@@ -412,35 +418,36 @@
     function draw() {
         ctx.fillStyle = '#050505'; ctx.fillRect(0,0,canvas.width, canvas.height);
         
-        // Grid
-        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-        let s = 120 * camera.zoom;
+        // Grid persistente
+        ctx.strokeStyle = 'rgba(0,255,0,0.02)';
+        let s = 130 * camera.zoom;
         for(let x=(-camera.x*camera.zoom)%s; x<canvas.width; x+=s){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
         for(let y=(-camera.y*camera.zoom)%s; y<canvas.height; y+=s){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
 
         buildings.forEach(b => {
-            let sx = (b.x-camera.x)*camera.zoom, sy = (b.y-camera.y)*camera.zoom, sz = b.radius*2.3*camera.zoom;
-            if (b.cooldown > 0) ctx.globalAlpha = 0.3;
+            let sx = (b.x-camera.x)*camera.zoom, sy = (b.y-camera.y)*camera.zoom, sz = b.radius*2.4*camera.zoom;
+            if (b.cooldown > 0) ctx.globalAlpha = 0.2;
             ctx.drawImage(b.img, sx-sz/2, sy-sz/2, sz, sz * (1-camera.angle));
             ctx.globalAlpha = 1;
         });
 
         items.forEach(it => {
-            let sx = (it.x-camera.x)*camera.zoom, sy = (it.y-camera.y)*camera.zoom, sz = 40*camera.zoom;
-            ctx.drawImage(images.ammobox, sx-sz/2, sy-sz/2, sz, sz);
+            let sx = (it.x-camera.x)*camera.zoom, sy = (it.y-camera.y)*camera.zoom, sz = 45*camera.zoom;
+            ctx.drawImage(images.ammobox, sx-sz/2, sy-sz/2, sz, sz * (1-camera.angle));
         });
 
         bullets.forEach(b => {
-            ctx.fillStyle = b.color; ctx.beginPath(); ctx.arc((b.x-camera.x)*camera.zoom, (b.y-camera.y)*camera.zoom, 5*camera.zoom, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = b.color; ctx.beginPath(); ctx.arc((b.x-camera.x)*camera.zoom, (b.y-camera.y)*camera.zoom, 6*camera.zoom, 0, Math.PI*2); ctx.fill();
         });
 
         grenades.forEach(g => {
             let sx = (g.x-camera.x)*camera.zoom, sy = (g.y-camera.y)*camera.zoom;
             if (!g.exploded) {
-                ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(sx, sy, 8*camera.zoom, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(sx, sy, 9*camera.zoom, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#f00'; ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.fillText(Math.ceil(g.timer/60), sx, sy-15);
             } else {
                 ctx.beginPath(); ctx.arc(sx, sy, g.radius*camera.zoom, 0, Math.PI*2);
-                ctx.fillStyle = `rgba(255, 120, 0, ${1 - g.radius/g.maxRadius})`; ctx.fill();
+                ctx.fillStyle = `rgba(255, 80, 0, ${1 - g.radius/g.maxRadius})`; ctx.fill();
             }
         });
 
@@ -451,29 +458,29 @@
     }
 
     function drawMinimap() {
-        mctx.fillStyle = 'rgba(0, 30, 0, 0.8)'; mctx.fillRect(0,0,140,140);
-        const scale = 0.02; // Zoom del mapa
-        const cx = 70, cy = 70;
+        mctx.fillStyle = 'rgba(0, 20, 0, 0.9)'; mctx.fillRect(0,0,150,150);
+        const scale = 0.015; // Escala del mapa
+        const cx = 75, cy = 75;
         
-        // Player
-        mctx.fillStyle = 'white'; mctx.fillRect(cx-2, cy-2, 4, 4);
+        // Player (Punto Blanco)
+        mctx.fillStyle = '#fff'; mctx.fillRect(cx-2, cy-2, 4, 4);
         
-        // Refugios (Azules)
+        // Refugios (Iconos o puntos)
         buildings.forEach(b => {
             let mx = cx + (b.x - player.x) * scale;
             let my = cy + (b.y - player.y) * scale;
-            if (mx > 0 && mx < 140 && my > 0 && my < 140) {
+            if (mx > 0 && mx < 150 && my > 0 && my < 150) {
                 mctx.fillStyle = b.type === 'hospital' ? '#10b981' : '#3b82f6';
                 mctx.beginPath(); mctx.arc(mx, my, 4, 0, Math.PI*2); mctx.fill();
             }
         });
 
-        // Zombies (Puntos Verdes como pidió el usuario)
-        mctx.fillStyle = '#00ff00';
+        // Zombies (Puntos Verdes de Radar)
+        mctx.fillStyle = '#0f0';
         entities.forEach(e => {
             let mx = cx + (e.x - player.x) * scale;
             let my = cy + (e.y - player.y) * scale;
-            if (mx > 0 && mx < 140 && my > 0 && my < 140) {
+            if (mx > 0 && mx < 150 && my > 0 && my < 150) {
                 mctx.fillRect(mx-1, my-1, 2, 2);
             }
         });
@@ -488,11 +495,11 @@
     }
 
     function updateHUD() {
-        document.getElementById('lives-display').innerText = "❤️".repeat(3);
         document.getElementById('hp-bar').style.width = `${(player.hp/player.maxHp)*100}%`;
         document.getElementById('score-val').innerText = score.toString().padStart(6, '0');
         document.getElementById('level-display').innerText = `NV. ${currentLvl.toString().padStart(2, '0')}`;
         document.getElementById('total-kills-val').innerText = totalKills;
+        document.getElementById('target-kills-val').innerText = targetKills;
         document.getElementById('weapon-icon-btn').innerText = WEAPONS[activeWKey].icon;
         document.getElementById('ammo-count').innerText = WEAPONS[activeWKey].ammo;
     }
@@ -513,25 +520,24 @@
     function endGame() {
         isGameOver = true;
         document.getElementById('game-over').style.display = 'flex';
-        document.getElementById('final-stats').innerText = `NV: ${currentLvl} | BAJAS: ${totalKills} | SCORE: ${score}`;
+        document.getElementById('final-stats').innerHTML = `REPORTE DE BAJA:<br>NV: ${currentLvl} | HORDAS: ${totalKills} | PUNTOS: ${score}`;
     }
 
     window.onload = () => {
-        // Carga de imágenes específicas
         ZOMBIE_IMGS.forEach(src => { let i = new Image(); i.src = src; images.zombies.push(i); });
         Object.keys(ASSETS).forEach(k => {
             if (Array.isArray(ASSETS[k])) images[k] = ASSETS[k].map(u => { let i = new Image(); i.src = u; return i; });
             else { images[k] = new Image(); images[k].src = ASSETS[k]; }
         });
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        document.getElementById('startup-screen').style.display = 'flex';
     };
 
-    // INPUTS
     const bAct = document.getElementById('action-btn');
-    bAct.addEventListener('touchstart', (e) => { isFiring = true; e.preventDefault(); });
-    bAct.addEventListener('touchend', () => isFiring = false);
-    bAct.addEventListener('mousedown', () => isFiring = true);
-    bAct.addEventListener('mouseup', () => isFiring = false);
+    const startFire = (e) => { isFiring = true; e.preventDefault(); };
+    const endFire = () => isFiring = false;
+    bAct.addEventListener('touchstart', startFire); bAct.addEventListener('touchend', endFire);
+    bAct.addEventListener('mousedown', startFire); bAct.addEventListener('mouseup', endFire);
 
     canvas.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
