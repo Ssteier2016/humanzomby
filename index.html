@@ -17,7 +17,7 @@
         .font-military { font-family: 'Black Ops One', cursive; }
         
         #startup-screen {
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(20,0,0,0.95)), 
+            background: linear-gradient(to bottom, rgba(0,0,0,0.85), rgba(20,0,0,1)), 
                         url('https://images.unsplash.com/photo-1509248961158-e54f6934749c?auto=format&fit=crop&w=1200&q=80');
             background-size: cover; background-position: center;
         }
@@ -25,22 +25,22 @@
         .modal-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000;
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(10px);
         }
 
         .avatar-card {
-            border: 3px solid #1e293b; transition: all 0.2s; cursor: pointer; background: rgba(30, 41, 59, 0.3);
+            border: 3px solid #1e293b; transition: all 0.2s; cursor: pointer; background: rgba(30, 41, 59, 0.4);
         }
         .avatar-card.selected {
-            border-color: #ef4444; background: rgba(239, 68, 68, 0.2); transform: scale(1.1);
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+            border-color: #ef4444; background: rgba(239, 68, 68, 0.3); transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
         }
 
         #action-btn {
             width: 85px; height: 85px; background: radial-gradient(circle, #ef4444 0%, #7f1d1d 100%);
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             font-size: 35px; border: 4px solid rgba(255,255,255,0.3);
-            box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.6);
         }
 
         .status-badge {
@@ -48,102 +48,106 @@
             text-transform: uppercase; letter-spacing: 1px; margin-top: 4px;
             box-shadow: 0 0 15px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
         }
-        .healing { background: #059669; animation: pulse 1s infinite; }
         .recharging { background: #3b82f6; animation: pulse 0.5s infinite; }
+        .cooldown-mode { background: #dc2626; color: white; border: 1px solid white; }
         
         @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
         
         #mini-map {
-            position: absolute; bottom: 20px; left: 20px; width: 150px; height: 150px;
-            background: rgba(0, 15, 0, 0.85); border: 2px solid #00ff0044; border-radius: 12px;
+            position: absolute; bottom: 20px; left: 20px; width: 140px; height: 140px;
+            background: rgba(0, 15, 0, 0.9); border: 2px solid #00ff0044; border-radius: 12px;
             overflow: hidden; pointer-events: none; z-index: 20;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            box-shadow: 0 0 15px rgba(0,0,0,0.8);
         }
 
         .blood-overlay {
             position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none;
             box-shadow: inset 0 0 100px rgba(255,0,0,0); transition: box-shadow 0.3s; z-index: 5;
         }
-        .damage-taken { box-shadow: inset 0 0 150px rgba(255,0,0,0.6); }
+        .damage-taken { box-shadow: inset 0 0 180px rgba(255,0,0,0.7); }
     </style>
 </head>
 <body>
 
     <div id="blood-vignette" class="blood-overlay"></div>
-    <div id="level-up-text" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-amber-500 text-5xl font-military opacity-0 transition-opacity duration-500 z-[100] pointer-events-none drop-shadow-[0_0_30px_rgba(245,158,11,0.8)]">¡NIVEL COMPLETADO!</div>
+    <div id="level-up-text" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-amber-500 text-5xl font-military opacity-0 transition-opacity duration-500 z-[100] pointer-events-none drop-shadow-[0_0_30px_rgba(245,158,11,1)]">¡ZONA LIMPIA!</div>
 
-    <!-- Portada -->
+    <!-- Pantalla de Inicio -->
     <div id="startup-screen" class="modal-screen flex clickable px-6 text-center">
-        <div class="mb-8">
-            <h1 class="text-6xl font-military text-red-600 drop-shadow-2xl">SURVIVOR OPS</h1>
-            <h2 class="text-xl font-game text-white tracking-[0.4em] bg-red-600/20 py-1">RED ZONE PRO</h2>
+        <div class="mb-10">
+            <h1 class="text-6xl font-military text-red-600 tracking-tighter drop-shadow-2xl">SURVIVOR OPS</h1>
+            <h2 class="text-2xl font-game text-white tracking-[0.5em] bg-red-600/20 py-1">RED ZONE PRO</h2>
         </div>
+        
         <div id="setup-ui" class="flex flex-col items-center w-full max-w-sm">
             <div class="grid grid-cols-4 gap-3 mb-8 w-full">
-                <div onclick="selectAvatar(0)" id="av-0" class="avatar-card selected p-1 rounded-lg">
+                <div onclick="selectAvatar(0)" id="av-0" class="avatar-card selected p-1 rounded-xl">
                     <img src="https://cdn-icons-png.flaticon.com/512/3408/3408545.png" class="w-full">
                 </div>
-                <div onclick="selectAvatar(1)" id="av-1" class="avatar-card p-1 rounded-lg">
+                <div onclick="selectAvatar(1)" id="av-1" class="avatar-card p-1 rounded-xl">
                     <img src="https://cdn-icons-png.flaticon.com/512/4140/4140037.png" class="w-full">
                 </div>
-                <div onclick="selectAvatar(2)" id="av-2" class="avatar-card p-1 rounded-lg">
+                <div onclick="selectAvatar(2)" id="av-2" class="avatar-card p-1 rounded-xl">
                     <img src="https://cdn-icons-png.flaticon.com/512/1154/1154443.png" class="w-full">
                 </div>
-                <div onclick="selectAvatar(3)" id="av-3" class="avatar-card p-1 rounded-lg">
+                <div onclick="selectAvatar(3)" id="av-3" class="avatar-card p-1 rounded-xl">
                     <img src="https://cdn-icons-png.flaticon.com/512/606/606553.png" class="w-full">
                 </div>
             </div>
-            <input id="player-name-input" type="text" maxlength="12" placeholder="ID DEL AGENTE" class="w-full bg-black/60 border-2 border-red-900/50 text-white p-4 rounded-xl text-center font-bold outline-none uppercase tracking-widest mb-4">
-            <button onclick="startGame(false)" class="w-full bg-red-700 text-white font-military py-5 rounded-xl text-xl hover:bg-red-600 shadow-xl transition-all">INICIAR OPERACIÓN</button>
+            <input id="player-name-input" type="text" maxlength="12" placeholder="ID OPERATIVO" class="w-full bg-black/60 border-2 border-red-900/50 text-white p-4 rounded-xl text-center font-bold outline-none uppercase tracking-widest mb-4 text-xl">
+            <button onclick="startGame(false)" class="w-full bg-red-700 text-white font-military py-5 rounded-xl text-2xl hover:bg-red-600 shadow-2xl transition-all">DESPLEGAR AGENTE</button>
         </div>
     </div>
 
     <!-- Mini Mapa -->
     <div id="mini-map">
-        <canvas id="mapCanvas" width="150" height="150"></canvas>
+        <canvas id="mapCanvas" width="140" height="140"></canvas>
     </div>
 
     <!-- HUD -->
     <div class="ui-layer p-4 flex flex-col justify-between">
         <div class="flex justify-between items-start">
             <div class="flex flex-col gap-2">
-                <div class="flex items-center gap-3">
-                    <div id="lives-display" class="text-2xl drop-shadow-md">❤️❤️❤️</div>
-                    <button onclick="togglePause()" class="clickable bg-black/50 p-2 px-3 rounded-lg border border-white/20 text-[10px] font-bold">PAUSA</button>
+                <div class="flex items-center gap-4">
+                    <div id="lives-display" class="text-3xl drop-shadow-md">❤️❤️❤️</div>
+                    <button onclick="togglePause()" class="clickable bg-black/60 p-2 px-4 rounded-xl border border-white/20 text-[10px] font-bold backdrop-blur-md">PAUSA</button>
                 </div>
-                <div class="w-48 h-3 bg-black rounded-full border border-white/10 overflow-hidden relative">
-                    <div id="hp-bar" class="h-full bg-gradient-to-r from-red-600 to-orange-500 transition-all"></div>
+                <div class="w-52 h-4 bg-black rounded-full border border-white/10 overflow-hidden relative shadow-inner">
+                    <div id="hp-bar" class="h-full bg-gradient-to-r from-red-600 to-orange-500 transition-all duration-300"></div>
                 </div>
                 <div id="status-container" class="flex flex-col items-start gap-1"></div>
             </div>
 
             <div class="flex flex-col items-end gap-2">
-                <div class="bg-black/60 p-2 px-4 rounded-xl border border-red-500/20 text-right">
-                    <div class="text-[8px] font-bold text-red-500 uppercase tracking-widest">Objetivo: <span id="objective-desc">LIMPIEZA</span></div>
-                    <div id="level-display" class="text-xl font-military text-white">NV. 01</div>
+                <div class="bg-black/60 p-2 px-6 rounded-2xl border border-red-500/30 text-right backdrop-blur-md">
+                    <div class="text-[9px] font-bold text-red-500 uppercase tracking-widest">Sector Operativo</div>
+                    <div id="level-display" class="text-2xl font-military text-white">NV. 01</div>
                 </div>
-                <div class="relative">
-                    <button onclick="quickSwapWeapon()" class="clickable bg-zinc-900 w-16 h-16 rounded-xl border-2 border-zinc-700 shadow-xl flex items-center justify-center text-3xl transition-transform active:scale-90">
+                <div class="relative mt-2">
+                    <button id="weapon-swap-btn" onclick="quickSwapWeapon()" class="clickable bg-zinc-900 w-16 h-16 rounded-2xl border-2 border-zinc-700 shadow-2xl flex items-center justify-center text-3xl transition-transform active:scale-90 hover:border-red-500">
                         <span id="weapon-icon-btn">🔫</span>
                     </button>
-                    <div id="ammo-count" class="absolute -bottom-1 -left-1 bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded border border-white">60</div>
+                    <div id="ammo-count" class="absolute -bottom-1 -left-1 bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded border border-white shadow-lg">60</div>
                 </div>
             </div>
         </div>
 
         <div class="flex justify-between items-end">
-            <div class="ml-[170px] bg-black/60 p-2 px-4 rounded-lg border border-white/5">
-                <div class="text-[8px] text-zinc-400 font-bold uppercase">Horda Abatida</div>
+            <div class="ml-40 bg-black/80 p-3 px-5 rounded-2xl border border-white/10 backdrop-blur-md">
+                <div class="text-[9px] text-red-400 font-bold uppercase tracking-tighter mb-1">Objetivo Horda</div>
                 <div class="flex items-baseline gap-2">
-                    <span id="total-kills-val" class="text-lg font-military text-green-500">0</span>
-                    <span class="text-[10px] text-zinc-600">/ <span id="target-kills-val">100</span></span>
+                    <span id="total-kills-val" class="text-xl font-military text-green-500">0</span>
+                    <span class="text-xs text-zinc-500">/ <span id="target-kills-val">100</span></span>
+                </div>
+                <div class="w-32 h-1 bg-zinc-800 rounded-full mt-1 overflow-hidden">
+                    <div id="objective-progress" class="h-full bg-green-500 transition-all" style="width: 0%"></div>
                 </div>
             </div>
             
             <div class="flex flex-col items-end gap-3">
-                <div class="bg-black/60 p-2 px-4 rounded-lg text-right">
-                    <div class="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">EXP. ACUMULADA</div>
-                    <div id="score-val" class="text-lg font-military text-amber-500">00000</div>
+                <div class="bg-black/60 p-2 px-5 rounded-xl border border-white/5 text-right">
+                    <div class="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">SCORE</div>
+                    <div id="score-val" class="text-xl font-military text-amber-500">00000</div>
                 </div>
                 <div id="action-btn" class="clickable select-none transition-all active:scale-75">💥</div>
             </div>
@@ -152,9 +156,9 @@
 
     <!-- Game Over -->
     <div id="game-over" class="modal-screen clickable">
-        <h2 class="text-5xl font-military mb-4 text-red-700 uppercase">MISIÓN FALLIDA</h2>
-        <div id="final-stats" class="text-white mb-6 text-center text-sm font-mono bg-red-900/20 p-4 rounded-xl border border-red-900/50"></div>
-        <button onclick="location.reload()" class="bg-white text-black font-military py-4 px-12 rounded-xl text-lg hover:bg-red-600 hover:text-white transition-colors">REINTENTAR OPERACIÓN</button>
+        <h2 class="text-5xl font-military mb-4 text-red-700 uppercase drop-shadow-2xl">BAJA EN COMBATE</h2>
+        <div id="final-stats" class="text-white mb-8 text-center text-sm font-mono bg-red-900/20 p-6 rounded-2xl border border-red-900/40"></div>
+        <button onclick="location.reload()" class="bg-white text-black font-military py-5 px-16 rounded-2xl text-xl hover:bg-red-600 hover:text-white transition-colors">REINTENTAR</button>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -165,12 +169,12 @@
     const mapCanvas = document.getElementById('mapCanvas');
     const mctx = mapCanvas.getContext('2d');
     
-    // --- CONFIGURACIÓN DE ASSETS ---
-    const ZOMBIE_IMGS = ['zombie1.png', 'zombie2.png', 'zombie3.png'];
-    const ASSETS = {
+    // --- ASSETS ---
+    const ZOMBIE_IMGS_SRCS = ['zombie1.png', 'zombie2.png', 'zombie3.png'];
+    const ASSETS_URLS = {
         hospital: 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png',
         refuge: 'https://cdn-icons-png.flaticon.com/512/2590/2590525.png',
-        ammobox: 'https://cdn-icons-png.flaticon.com/512/6124/6124119.png',
+        ammo: 'https://cdn-icons-png.flaticon.com/512/6124/6124119.png',
         hero: [
             'https://cdn-icons-png.flaticon.com/512/3408/3408545.png',
             'https://cdn-icons-png.flaticon.com/512/4140/4140037.png',
@@ -180,15 +184,15 @@
     };
 
     const WEAPONS = {
-        PISTOL: { icon: '🔫', speed: 22, damage: 130, delay: 180, ammo: 80, maxAmmo: 120, color: '#fbbf24' },
-        PLASMA: { icon: '🔥', speed: 30, damage: 95, delay: 70, ammo: 200, maxAmmo: 300, color: '#22d3ee' },
-        GRENADE: { icon: '💣', speed: 12, damage: 4500, delay: 1500, ammo: 8, maxAmmo: 12, color: '#ef4444', isGrenade: true }
+        PISTOL: { icon: '🔫', speed: 22, damage: 140, delay: 180, ammo: 80, maxAmmo: 120, color: '#fbbf24' },
+        PLASMA: { icon: '🔥', speed: 32, damage: 100, delay: 75, ammo: 200, maxAmmo: 350, color: '#22d3ee' },
+        GRENADE: { icon: '💣', speed: 12, damage: 5000, delay: 1500, ammo: 8, maxAmmo: 15, color: '#ef4444', isGrenade: true }
     };
 
     let images = { zombies: [] };
     let player, entities = [], bullets = [], buildings = [], items = [], grenades = [];
-    let camera = { x: 0, y: 0, zoom: 0.95, angle: 0.12 }; 
-    let keys = {}, touchMove = { x: 0, y: 0 }, touchStart = null;
+    let camera = { x: 0, y: 0, zoom: 0.9, angle: 0.12 }; 
+    let keys = {}, touchMove = { x: 0, y: 0 }, touchStart = null, pinchDist = null;
     let isGameOver = false, isPaused = false, score = 0, kills = 0, totalKills = 0, targetKills = 100, currentLvl = 1;
     let activeWKey = 'PISTOL', selectedAvatarIdx = 0, isFiring = false, lastFire = 0;
 
@@ -197,11 +201,11 @@
             this.x = x; this.y = y;
             this.isPlayer = config.isPlayer || false;
             this.team = config.team || 'zombie';
-            this.radius = config.radius || 25;
+            this.radius = config.radius || 28;
             this.maxHp = config.hp || 100;
             this.hp = this.maxHp;
             this.speed = config.speed || 4;
-            this.damage = config.damage || 8;
+            this.damage = config.damage || 20; // DAÑO ALTO
             this.angle = 0;
             this.zImgIdx = Math.floor(Math.random() * 3);
             this.invul = 0;
@@ -217,38 +221,42 @@
 
         checkBuildings() {
             let foundRefuge = false;
+            let statusHTML = '';
             buildings.forEach(b => {
                 let d = Math.hypot(this.x - b.x, this.y - b.y);
                 if (d < b.radius + 20) {
-                    if (b.type === 'hospital' && this.hp < this.maxHp) this.hp += 1.2;
-                    if (b.type === 'refuge') {
-                        if (b.cooldown > 0) return;
-                        foundRefuge = true; b.timer++;
-                        // RECARGA DOBLE DE RÁPIDO (cada 15 frames)
-                        if (b.timer % 15 === 0) {
-                            Object.keys(WEAPONS).forEach(w => {
-                                if (WEAPONS[w].ammo < WEAPONS[w].maxAmmo) WEAPONS[w].ammo++;
-                            });
-                            updateHUD();
-                        }
-                        if (b.timer >= 600) { b.cooldown = 3600; b.timer = 0; }
+                    if (b.type === 'hospital' && this.hp < this.maxHp) {
+                        this.hp += 1.5; statusHTML += '<div class="status-badge bg-green-600">Sanando...</div>';
                     }
-                } else if (b.type === 'refuge' && b.timer > 0) { b.cooldown = 3600; b.timer = 0; }
+                    if (b.type === 'refuge') {
+                        if (b.cooldown > 0) {
+                            statusHTML += `<div class="status-badge cooldown-mode">BLOQUEADO (${Math.ceil(b.cooldown/60)}s)</div>`;
+                        } else {
+                            foundRefuge = true; b.timer++;
+                            statusHTML += `<div class="status-badge recharging">Recarga Bunker (${Math.ceil((600-b.timer)/60)}s)</div>`;
+                            // RECARGA DOBLE DE RÁPIDO
+                            if (b.timer % 15 === 0) {
+                                Object.keys(WEAPONS).forEach(w => { if (WEAPONS[w].ammo < WEAPONS[w].maxAmmo) WEAPONS[w].ammo++; });
+                                updateHUD();
+                            }
+                            if (b.timer >= 600) { b.cooldown = 3600; b.timer = 0; }
+                        }
+                    }
+                } else if (b.type === 'refuge' && b.timer > 0) {
+                    b.cooldown = 3600; b.timer = 0; // Entra en cooldown si sale
+                }
             });
             this.inRefuge = foundRefuge;
-            this.renderStatus();
+            document.getElementById('status-container').innerHTML = statusHTML;
         }
 
         checkItems() {
             items.forEach((it, i) => {
                 if (Math.hypot(this.x - it.x, this.y - it.y) < this.radius + 30) {
-                    if (it.type === 'ammo') {
-                        Object.keys(WEAPONS).forEach(w => {
-                            WEAPONS[w].ammo = Math.min(WEAPONS[w].maxAmmo, WEAPONS[w].ammo + 25);
-                        });
-                        updateHUD();
-                    }
-                    items.splice(i, 1);
+                    Object.keys(WEAPONS).forEach(w => {
+                        WEAPONS[w].ammo = Math.min(WEAPONS[w].maxAmmo, WEAPONS[w].ammo + 30);
+                    });
+                    items.splice(i, 1); updateHUD();
                 }
             });
         }
@@ -271,8 +279,9 @@
                 return;
             }
             this.angle = Math.atan2(player.y - this.y, player.x - this.x);
-            this.x += Math.cos(this.angle) * (this.speed + (currentLvl * 0.1));
-            this.y += Math.sin(this.angle) * (this.speed + (currentLvl * 0.1));
+            let currentSpeed = this.speed + (currentLvl * 0.12);
+            this.x += Math.cos(this.angle) * currentSpeed;
+            this.y += Math.sin(this.angle) * currentSpeed;
             if (Math.hypot(player.x - this.x, player.y - this.y) < this.radius + player.radius) player.takeDamage(this.damage);
         }
 
@@ -280,7 +289,7 @@
             if (this.invul > 0 || this.inRefuge) return;
             this.hp -= amt;
             if (this.isPlayer) {
-                this.invul = 50;
+                this.invul = 60;
                 document.getElementById('blood-vignette').classList.add('damage-taken');
                 setTimeout(() => document.getElementById('blood-vignette').classList.remove('damage-taken'), 300);
             }
@@ -288,13 +297,6 @@
                 if (this.isPlayer) endGame(); else { this.active = false; onDeath(this); }
             }
             if (this.isPlayer) updateHUD();
-        }
-
-        renderStatus() {
-            let html = '';
-            if (this.inRefuge) html += '<div class="status-badge recharging">Recarga Acelerada Bunker...</div>';
-            if (this.hp < this.maxHp * 0.4) html += '<div class="status-badge bg-red-900 border-red-500 animate-pulse">ESTADO CRÍTICO</div>';
-            document.getElementById('status-container').innerHTML = html;
         }
 
         draw() {
@@ -315,10 +317,14 @@
 
             ctx.rotate(this.angle + Math.PI/2);
             let img = this.isPlayer ? images.hero[selectedAvatarIdx] : images.zombies[this.zImgIdx];
-            if (img && img.complete) ctx.drawImage(img, -size/2, -size/2, size, size);
-            else { 
-                ctx.fillStyle = this.isPlayer ? '#3b82f6' : '#10b981'; 
-                ctx.beginPath(); ctx.arc(0,0,size/2,0,Math.PI*2); ctx.fill(); 
+            
+            if (img && img.complete && img.naturalWidth !== 0) {
+                ctx.drawImage(img, -size/2, -size/2, size, size);
+            } else { 
+                // Fallback si la imagen no carga
+                ctx.fillStyle = this.isPlayer ? '#3b82f6' : `hsl(${140 - (this.zImgIdx*30)}, 100%, 50%)`; 
+                ctx.beginPath(); ctx.arc(0,0,size/2,0,Math.PI*2); ctx.fill();
+                ctx.strokeStyle = 'white'; ctx.stroke();
             }
             ctx.restore();
         }
@@ -326,20 +332,20 @@
 
     function onDeath(e) {
         kills++; totalKills++;
-        score += 600 * currentLvl;
+        score += 700 * currentLvl;
         if (kills >= targetKills) {
             currentLvl++; targetKills += 50; kills = 0;
             const anim = document.getElementById('level-up-text');
             anim.style.opacity = '1'; setTimeout(() => anim.style.opacity = '0', 3000);
             player.hp = player.maxHp;
         }
-        if (Math.random() < 0.2) items.push({ x: e.x, y: e.y, type: 'ammo' });
+        if (Math.random() < 0.25) items.push({ x: e.x, y: e.y, type: 'ammo' });
         updateHUD();
     }
 
     function startGame(resume) {
         document.getElementById('startup-screen').style.display = 'none';
-        player = new Entity(0, 0, { isPlayer: true, hp: 450, speed: 7.8 });
+        player = new Entity(0, 0, { isPlayer: true, hp: 500, speed: 7.8 });
         entities = []; bullets = []; buildings = []; items = []; grenades = [];
         isGameOver = false; currentLvl = 1; score = 0; totalKills = 0; targetKills = 100;
         
@@ -351,16 +357,16 @@
     }
 
     function spawnBuilding(type) {
-        let a = Math.random()*Math.PI*2, d = 1500 + Math.random()*2500;
+        let a = Math.random()*Math.PI*2, d = 1600 + Math.random()*2400;
         buildings.push({ x: Math.cos(a)*d, y: Math.sin(a)*d, type: type, radius: 140, img: images[type], timer: 0, cooldown: 0 });
     }
 
     function spawnBullet(owner, angle) {
         let w = WEAPONS[activeWKey];
         if (w.isGrenade) {
-            grenades.push({ x: owner.x, y: owner.y, vx: Math.cos(angle)*w.speed, vy: Math.sin(angle)*w.speed, timer: 180, radius: 0, maxRadius: 450, exploded: false });
+            grenades.push({ x: owner.x, y: owner.y, vx: Math.cos(angle)*w.speed, vy: Math.sin(angle)*w.speed, timer: 180, radius: 0, maxRadius: 480, exploded: false });
         } else {
-            bullets.push({ x: owner.x, y: owner.y, vx: Math.cos(angle)*w.speed, vy: Math.sin(angle)*w.speed, damage: w.damage + (currentLvl*15), color: w.color, life: 110 });
+            bullets.push({ x: owner.x, y: owner.y, vx: Math.cos(angle)*w.speed, vy: Math.sin(angle)*w.speed, damage: w.damage + (currentLvl*20), color: w.color, life: 120 });
         }
     }
 
@@ -381,8 +387,7 @@
             if (WEAPONS[activeWKey].ammo > 0) {
                 spawnBullet(player, player.angle);
                 WEAPONS[activeWKey].ammo--;
-                lastFire = Date.now();
-                updateHUD();
+                lastFire = Date.now(); updateHUD();
             }
         }
 
@@ -396,18 +401,18 @@
 
         grenades.forEach((g, i) => {
             if (!g.exploded) {
-                g.x += g.vx; g.y += g.vy; g.vx *= 0.96; g.vy *= 0.96; g.timer--;
+                g.x += g.vx; g.y += g.vy; g.vx *= 0.95; g.vy *= 0.95; g.timer--;
                 if (g.timer <= 0) g.exploded = true;
             } else {
-                g.radius += 16;
-                entities.forEach(e => { if (e.active && Math.hypot(g.x-e.x, g.y-e.y) < g.radius) e.takeDamage(75); });
+                g.radius += 18;
+                entities.forEach(e => { if (e.active && Math.hypot(g.x-e.x, g.y-e.y) < g.radius) e.takeDamage(80); });
                 if (g.radius >= g.maxRadius) grenades.splice(i, 1);
             }
         });
 
-        if (entities.filter(e => e.active).length < (45 + currentLvl*22) && Math.random() < 0.12) {
-            let a = Math.random()*Math.PI*2, d = 1900;
-            entities.push(new Entity(player.x + Math.cos(a)*d, player.y + Math.sin(a)*d, { speed: 3.5 + Math.random()*2.5, hp: 160 * currentLvl, damage: 15 + currentLvl*6 }));
+        if (entities.filter(e => e.active).length < (45 + currentLvl*25) && Math.random() < 0.1) {
+            let a = Math.random()*Math.PI*2, d = 2000;
+            entities.push(new Entity(player.x + Math.cos(a)*d, player.y + Math.sin(a)*d, { speed: 3.8 + Math.random()*3, hp: 180 * currentLvl, damage: 18 + currentLvl*8 }));
         }
 
         player.update();
@@ -418,36 +423,36 @@
     function draw() {
         ctx.fillStyle = '#050505'; ctx.fillRect(0,0,canvas.width, canvas.height);
         
-        // Grid persistente
-        ctx.strokeStyle = 'rgba(0,255,0,0.02)';
-        let s = 130 * camera.zoom;
+        // Radar Grid
+        ctx.strokeStyle = 'rgba(0,255,0,0.03)';
+        let s = 140 * camera.zoom;
         for(let x=(-camera.x*camera.zoom)%s; x<canvas.width; x+=s){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
         for(let y=(-camera.y*camera.zoom)%s; y<canvas.height; y+=s){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
 
         buildings.forEach(b => {
-            let sx = (b.x-camera.x)*camera.zoom, sy = (b.y-camera.y)*camera.zoom, sz = b.radius*2.4*camera.zoom;
+            let sx = (b.x-camera.x)*camera.zoom, sy = (b.y-camera.y)*camera.zoom, sz = b.radius*2.5*camera.zoom;
             if (b.cooldown > 0) ctx.globalAlpha = 0.2;
             ctx.drawImage(b.img, sx-sz/2, sy-sz/2, sz, sz * (1-camera.angle));
             ctx.globalAlpha = 1;
         });
 
         items.forEach(it => {
-            let sx = (it.x-camera.x)*camera.zoom, sy = (it.y-camera.y)*camera.zoom, sz = 45*camera.zoom;
-            ctx.drawImage(images.ammobox, sx-sz/2, sy-sz/2, sz, sz * (1-camera.angle));
+            let sx = (it.x-camera.x)*camera.zoom, sy = (it.y-camera.y)*camera.zoom, sz = 50*camera.zoom;
+            ctx.drawImage(images.ammo, sx-sz/2, sy-sz/2, sz, sz * (1-camera.angle));
         });
 
         bullets.forEach(b => {
-            ctx.fillStyle = b.color; ctx.beginPath(); ctx.arc((b.x-camera.x)*camera.zoom, (b.y-camera.y)*camera.zoom, 6*camera.zoom, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = b.color; ctx.beginPath(); ctx.arc((b.x-camera.x)*camera.zoom, (b.y-camera.y)*camera.zoom, 7*camera.zoom, 0, Math.PI*2); ctx.fill();
         });
 
         grenades.forEach(g => {
             let sx = (g.x-camera.x)*camera.zoom, sy = (g.y-camera.y)*camera.zoom;
             if (!g.exploded) {
-                ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(sx, sy, 9*camera.zoom, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#f00'; ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.fillText(Math.ceil(g.timer/60), sx, sy-15);
+                ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(sx, sy, 10*camera.zoom, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#f00'; ctx.font = 'bold 12px Orbitron'; ctx.textAlign = 'center'; ctx.fillText(Math.ceil(g.timer/60), sx, sy-20);
             } else {
                 ctx.beginPath(); ctx.arc(sx, sy, g.radius*camera.zoom, 0, Math.PI*2);
-                ctx.fillStyle = `rgba(255, 80, 0, ${1 - g.radius/g.maxRadius})`; ctx.fill();
+                ctx.fillStyle = `rgba(255, 100, 0, ${1 - g.radius/g.maxRadius})`; ctx.fill();
             }
         });
 
@@ -458,29 +463,29 @@
     }
 
     function drawMinimap() {
-        mctx.fillStyle = 'rgba(0, 20, 0, 0.9)'; mctx.fillRect(0,0,150,150);
-        const scale = 0.015; // Escala del mapa
-        const cx = 75, cy = 75;
+        mctx.fillStyle = 'rgba(0, 20, 0, 0.95)'; mctx.fillRect(0,0,140,140);
+        const scale = 0.015; 
+        const cx = 70, cy = 70;
         
-        // Player (Punto Blanco)
+        // Player
         mctx.fillStyle = '#fff'; mctx.fillRect(cx-2, cy-2, 4, 4);
         
-        // Refugios (Iconos o puntos)
+        // Refugios
         buildings.forEach(b => {
             let mx = cx + (b.x - player.x) * scale;
             let my = cy + (b.y - player.y) * scale;
-            if (mx > 0 && mx < 150 && my > 0 && my < 150) {
+            if (mx > 0 && mx < 140 && my > 0 && my < 140) {
                 mctx.fillStyle = b.type === 'hospital' ? '#10b981' : '#3b82f6';
                 mctx.beginPath(); mctx.arc(mx, my, 4, 0, Math.PI*2); mctx.fill();
             }
         });
 
-        // Zombies (Puntos Verdes de Radar)
+        // Radar Enemigo (Puntos Verdes)
         mctx.fillStyle = '#0f0';
         entities.forEach(e => {
             let mx = cx + (e.x - player.x) * scale;
             let my = cy + (e.y - player.y) * scale;
-            if (mx > 0 && mx < 150 && my > 0 && my < 150) {
+            if (mx > 0 && mx < 140 && my > 0 && my < 140) {
                 mctx.fillRect(mx-1, my-1, 2, 2);
             }
         });
@@ -500,6 +505,7 @@
         document.getElementById('level-display').innerText = `NV. ${currentLvl.toString().padStart(2, '0')}`;
         document.getElementById('total-kills-val').innerText = totalKills;
         document.getElementById('target-kills-val').innerText = targetKills;
+        document.getElementById('objective-progress').style.width = `${(kills/targetKills)*100}%`;
         document.getElementById('weapon-icon-btn').innerText = WEAPONS[activeWKey].icon;
         document.getElementById('ammo-count').innerText = WEAPONS[activeWKey].ammo;
     }
@@ -511,23 +517,25 @@
 
     window.togglePause = () => { isPaused = !isPaused; };
     window.quickSwapWeapon = () => { 
-        let keys = Object.keys(WEAPONS);
-        let idx = keys.indexOf(activeWKey);
-        activeWKey = keys[(idx + 1) % keys.length];
+        let keysW = Object.keys(WEAPONS);
+        let idx = keysW.indexOf(activeWKey);
+        activeWKey = keysW[(idx + 1) % keysW.length];
         updateHUD();
     };
 
     function endGame() {
         isGameOver = true;
         document.getElementById('game-over').style.display = 'flex';
-        document.getElementById('final-stats').innerHTML = `REPORTE DE BAJA:<br>NV: ${currentLvl} | HORDAS: ${totalKills} | PUNTOS: ${score}`;
+        document.getElementById('final-stats').innerHTML = `REPORTE DE BAJA OPERATIVA:<br>NV: ${currentLvl} | HORDAS: ${totalKills} | EXP: ${score}`;
     }
 
     window.onload = () => {
-        ZOMBIE_IMGS.forEach(src => { let i = new Image(); i.src = src; images.zombies.push(i); });
-        Object.keys(ASSETS).forEach(k => {
-            if (Array.isArray(ASSETS[k])) images[k] = ASSETS[k].map(u => { let i = new Image(); i.src = u; return i; });
-            else { images[k] = new Image(); images[k].src = ASSETS[k]; }
+        // Cargar imágenes de zombies específicas
+        ZOMBIE_IMGS_SRCS.forEach(src => { let i = new Image(); i.src = src; images.zombies.push(i); });
+        
+        Object.keys(ASSETS_URLS).forEach(k => {
+            if (Array.isArray(ASSETS_URLS[k])) images[k] = ASSETS_URLS[k].map(u => { let i = new Image(); i.src = u; return i; });
+            else { images[k] = new Image(); images[k].src = ASSETS_URLS[k]; }
         });
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
         document.getElementById('startup-screen').style.display = 'flex';
@@ -553,7 +561,11 @@
         }
     });
     canvas.addEventListener('touchend', () => { touchStart = null; touchMove = { x: 0, y: 0 }; pinchDist = null; });
-    window.onkeydown = (e) => keys[e.key.toLowerCase()] = true; window.onkeyup = (e) => keys[e.key.toLowerCase()] = false;
+    window.onkeydown = (e) => {
+        keys[e.key.toLowerCase()] = true;
+        if(e.key === 'q') quickSwapWeapon(); // Acceso rápido teclado
+    };
+    window.onkeyup = (e) => keys[e.key.toLowerCase()] = false;
 </script>
 </body>
 </html>
