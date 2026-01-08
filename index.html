@@ -1,5 +1,3 @@
-[file name]: 15index.html
-[file content begin]
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -43,45 +41,51 @@
             box-shadow: 0 0 30px rgba(239, 68, 68, 0.4);
         }
 
+        /* Walkie Talkie UI */
         #mic-btn {
-            width: 60px; height: 60px;
-            background: radial-gradient(circle, #10b981 0%, #065f46 100%);
+            width: 70px; height: 70px;
+            background: radial-gradient(circle, #334155 0%, #0f172a 100%);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px; border: 3px solid rgba(255,255,255,0.2);
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
-            transition: all 0.2s;
-            position: absolute;
-            left: 120px;
-            bottom: 20px;
+            font-size: 28px; border: 4px solid rgba(255,255,255,0.1);
+            transition: all 0.1s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            user-select: none;
         }
-
         #mic-btn.active {
-            background: radial-gradient(circle, #ef4444 0%, #7f1d1d 100%);
-            box-shadow: 0 0 30px rgba(239, 68, 68, 0.6);
+            background: radial-gradient(circle, #22c55e 0%, #14532d 100%);
+            border-color: #4ade80;
+            box-shadow: 0 0 30px rgba(34, 197, 94, 0.6);
             transform: scale(1.1);
-            animation: pulse 1.5s infinite;
         }
 
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        /* Chat Minimizable */
+        #chat-container {
+            position: absolute; bottom: 280px; left: 20px;
+            width: 240px; transition: all 0.3s ease;
+            pointer-events: auto; z-index: 50;
         }
-
-        .status-badge {
-            padding: 4px 12px;
-            border-radius: 99px;
-            font-size: 10px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 4px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
-        .healing { background: #10b981; }
-        .protected { background: #3b82f6; }
+        #chat-container.minimized { transform: translateY(125px); opacity: 0.6; }
         
+        #chat-box {
+            width: 100%; height: 140px;
+            background: rgba(0,0,0,0.7);
+            font-size: 10px; overflow-y: auto;
+            border-radius: 12px 12px 0 0;
+            padding: 10px; border-left: 4px solid #3b82f6;
+            backdrop-filter: blur(10px);
+            transition: height 0.3s ease;
+        }
+        #chat-container.minimized #chat-box { height: 0; padding: 0; border: none; }
+
+        .voice-entry {
+            margin-bottom: 4px; padding: 4px 8px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 4px; border-left: 2px solid;
+            animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
         #mini-map {
             position: absolute; bottom: 120px; left: 20px;
             width: 150px; height: 150px;
@@ -95,53 +99,13 @@
 
         #mini-map-canvas { width: 100%; height: 100%; }
 
-        /* Chat UI */
-        #chat-box {
-            position: absolute; bottom: 280px; left: 20px;
-            width: 220px; max-height: 140px;
-            background: rgba(0,0,0,0.3);
-            font-size: 10px; overflow-y: auto;
-            pointer-events: none; border-radius: 8px;
-            padding: 8px; border-left: 3px solid #3b82f6;
-            backdrop-filter: blur(4px);
+        .mic-pulse {
+            position: absolute; width: 100%; height: 100%;
+            border-radius: 50%; background: rgba(34, 197, 94, 0.4);
+            animation: pulse-ring 1s infinite;
+            z-index: -1;
         }
-        .chat-msg { margin-bottom: 4px; line-height: 1.3; }
-        .chat-name { font-weight: 900; }
-
-        /* Indicador de voz */
-        .voice-indicator {
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #10b981;
-            animation: voice-pulse 1s infinite;
-            pointer-events: none;
-            z-index: 20;
-        }
-
-        @keyframes voice-pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.3); opacity: 0.7; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        /* Estado del micrófono */
-        #mic-status {
-            position: absolute;
-            bottom: 85px;
-            left: 120px;
-            background: rgba(0,0,0,0.7);
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 9px;
-            color: #10b981;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            display: none;
-            z-index: 100;
-        }
+        @keyframes pulse-ring { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2.5); opacity: 0; } }
     </style>
 </head>
 <body>
@@ -149,19 +113,15 @@
     <div id="level-up-text" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[#fbbf24] text-6xl font-black font-game opacity-0 transition-opacity pointer-events-none z-[100] drop-shadow-[0_0_20px_rgba(251,191,36,0.8)]">¡NIVEL UP!</div>
     <div id="toast-container" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[2000] pointer-events-none flex flex-col items-center"></div>
 
-    <!-- Pantalla Inicial -->
     <div id="startup-screen" class="modal-screen flex clickable px-6 text-center">
         <h1 class="text-5xl font-black mb-2 text-blue-500 italic font-game tracking-tighter">SURVIVOR ULTIMATE</h1>
         
         <div id="auth-ui" class="flex flex-col items-center gap-4 w-full max-w-xs">
             <p id="cloud-status" class="text-gray-500 mb-4 text-[10px] tracking-[0.4em] font-bold uppercase text-center">Iniciando Red de Supervivencia...</p>
             <button id="google-login-btn" class="w-full bg-white text-gray-900 font-bold py-4 rounded-2xl flex items-center justify-center gap-3 shadow-lg clickable">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="G">
-                Acceder con Google
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="G"> Acceder con Google
             </button>
-            <button id="guest-login-btn" class="w-full bg-slate-800 text-white font-bold py-4 rounded-2xl border border-slate-700 clickable">
-                Entrar como Invitado
-            </button>
+            <button id="guest-login-btn" class="w-full bg-slate-800 text-white font-bold py-4 rounded-2xl border border-slate-700 clickable"> Entrar como Invitado </button>
         </div>
 
         <div id="setup-ui" class="hidden flex flex-col items-center w-full max-w-sm">
@@ -184,36 +144,23 @@
         </div>
     </div>
 
-    <!-- Lobby Multijugador -->
     <div id="multi-modal" class="modal-screen px-6">
         <h2 class="text-3xl font-game font-black text-purple-400 mb-4 italic">COOPERATIVO ONLINE</h2>
-        
         <div id="room-selection-ui" class="w-full max-w-xs space-y-4">
             <input id="room-id-input" type="text" placeholder="CÓDIGO DE SALA" class="bg-slate-900 border-2 border-slate-700 text-white p-4 rounded-2xl text-center font-bold focus:border-purple-500 outline-none uppercase tracking-widest w-full clickable">
             <button onclick="joinLobby()" class="w-full bg-purple-600 text-white font-black py-4 rounded-2xl font-game shadow-lg clickable">CONECTAR SALA</button>
             <button onclick="hideModals()" class="w-full text-gray-500 font-bold py-2 text-xs uppercase clickable">Atrás</button>
         </div>
-
         <div id="lobby-ui" class="hidden w-full max-w-sm flex flex-col gap-4">
             <div class="bg-slate-900/90 p-5 rounded-2xl border border-purple-500/40 backdrop-filter blur-md">
                 <p class="text-[10px] text-purple-400 font-black mb-3 uppercase tracking-widest">SALA ACTIVA: <span id="lobby-room-code" class="text-white">---</span></p>
                 <div id="lobby-players-list" class="flex flex-col gap-2 max-h-32 overflow-y-auto mb-4"></div>
-                
-                <div class="border-t border-white/10 pt-4">
-                    <div id="lobby-chat-messages" class="h-44 overflow-y-auto text-[11px] space-y-2 mb-3 pr-2 scroll-smooth"></div>
-                    <div class="flex gap-2">
-                        <input id="lobby-chat-input" type="text" placeholder="MENSAJE TÁCTICO..." class="flex-1 bg-black border border-white/10 p-3 rounded-xl text-xs outline-none focus:border-purple-500 clickable">
-                        <button onclick="sendChatMessageLobby()" class="bg-purple-600 px-4 rounded-xl font-bold text-xs clickable">ENVIAR</button>
-                    </div>
-                </div>
             </div>
-            
             <button onclick="startGame(false)" class="w-full bg-green-600 text-white font-black py-5 rounded-2xl font-game shadow-xl clickable animate-pulse">INICIAR MISIÓN</button>
             <button onclick="exitToMenu()" class="w-full text-red-500 font-bold py-2 text-[10px] uppercase clickable tracking-widest">Abandonar Operación</button>
         </div>
     </div>
 
-    <!-- Ajustes -->
     <div id="settings-modal" class="modal-screen px-10">
         <h2 class="text-3xl font-game font-black text-blue-400 mb-8 italic">MOTOR DE JUEGO</h2>
         <div class="w-full max-w-xs space-y-8">
@@ -225,7 +172,6 @@
         </div>
     </div>
 
-    <!-- HUD Juego -->
     <div class="ui-layer p-4 flex flex-col justify-between">
         <div class="flex justify-between items-start">
             <div class="flex flex-col gap-1">
@@ -237,14 +183,12 @@
                 <div class="w-40 h-3 bg-gray-900/80 rounded-full border border-white/10 overflow-hidden mt-1 shadow-inner">
                     <div id="hp-bar" class="h-full bg-red-500 transition-all w-full"></div>
                 </div>
-                <div id="status-container" class="flex flex-col items-start gap-1"></div>
             </div>
 
             <div class="flex flex-col items-end gap-2">
                 <div class="bg-black/40 p-2 px-4 rounded-xl backdrop-blur-md border border-white/10 text-right">
                     <div id="user-display-name" class="text-[8px] text-gray-400 mb-1">AGENTE</div>
-                    <div id="room-badge" class="hidden text-[7px] bg-purple-600/50 px-2 rounded mb-1 font-bold">CONEXIÓN: <span id="current-room-id"></span></div>
-                    <div class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Nivel</div>
+                    <div id="room-badge" class="hidden text-[7px] bg-purple-600/50 px-2 rounded mb-1 font-bold uppercase tracking-tighter">RED: <span id="current-room-id"></span></div>
                     <div id="level-display" class="text-2xl font-game font-black italic">01</div>
                 </div>
                 <div class="relative mt-2">
@@ -256,7 +200,15 @@
             </div>
         </div>
 
-        <div id="chat-box"></div>
+        <div id="chat-container">
+            <button onclick="toggleChat()" class="clickable w-full bg-slate-800/90 text-[8px] font-black py-1.5 rounded-t-lg backdrop-blur-md uppercase tracking-[0.2em] flex items-center justify-center gap-2 border-b border-white/10">
+                <span id="chat-toggle-icon">▼</span> RADIO FEED <span id="chat-toggle-icon-2">▼</span>
+            </button>
+            <div id="chat-box">
+                <div class="text-[8px] text-gray-600 text-center uppercase mt-4">Escaneando Red...</div>
+            </div>
+        </div>
+
         <div id="mini-map"><canvas id="mini-map-canvas"></canvas></div>
 
         <div class="flex justify-between items-end p-2">
@@ -269,31 +221,28 @@
                     <div id="objective-progress" class="h-full bg-green-500 transition-all" style="width: 0%"></div>
                 </div>
             </div>
-            <div id="mic-btn" class="clickable select-none flex items-center justify-center">🎤</div>
-            <div id="action-btn" class="clickable select-none flex items-center justify-center">💥</div>
+            <div class="flex gap-4 items-center">
+                <div class="relative">
+                    <button id="mic-btn" class="clickable select-none flex items-center justify-center">🎤</button>
+                    <div id="mic-pulse" class="hidden mic-pulse"></div>
+                </div>
+                <div id="action-btn" class="clickable select-none flex items-center justify-center">💥</div>
+            </div>
         </div>
-        <div id="mic-status">Micrófono: Apagado</div>
     </div>
 
-    <!-- Game Over -->
     <div id="game-over" class="modal-screen clickable">
         <h2 class="text-6xl font-black mb-4 text-red-600 font-game italic drop-shadow-2xl uppercase">HAS CAÍDO</h2>
         <div id="final-stats" class="text-gray-400 mb-8 font-mono text-center text-lg leading-relaxed"></div>
-        <div class="w-full max-w-sm bg-black/40 p-4 rounded-2xl border border-white/10 mb-6">
-            <h3 class="text-blue-400 font-bold text-[10px] uppercase mb-3 text-center">Ranking Global</h3>
-            <div id="leaderboard-list" class="flex flex-col gap-2"></div>
-        </div>
         <button onclick="location.reload()" class="bg-white text-black font-black py-5 px-16 rounded-2xl text-xl font-game shadow-2xl">VOLVER A INTENTAR</button>
     </div>
 
     <canvas id="gameCanvas"></canvas>
 
-    <!-- Firebase -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { getFirestore, doc, setDoc, getDoc, collection, getDocs, onSnapshot, deleteDoc, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
-        import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyDM9GK7_gnd0GaVbxwK9xnwl0qk75MnFXw",
@@ -308,22 +257,41 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const storage = getStorage(app);
         const appId = 'zombie-ultimate-v4-fusion';
 
         let currentUser = null;
         let multiplayerUnsubscribe = null;
-        let chatUnsubscribe = null;
         let voiceUnsubscribe = null;
-        window.playerColor = `hsl(${Math.random() * 360}, 70%, 60%)`;
+        window.playerColor = `hsl(${Math.random() * 360}, 80%, 60%)`;
 
-        const showToast = (msg) => {
-            const t = document.createElement('div');
-            t.className = 'bg-blue-600 text-white px-5 py-2 rounded-full text-[10px] font-bold shadow-2xl mb-2 animate-bounce';
-            t.innerText = msg;
-            const cont = document.getElementById('toast-container');
-            if(cont) { cont.appendChild(t); setTimeout(() => t.remove(), 4000); }
-        };
+        // --- RADIO (VOICE) SYSTEM ---
+        let mediaRecorder = null;
+        async function setupVoice() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+                mediaRecorder.ondataavailable = async (e) => {
+                    if (e.data.size > 0 && currentRoomId) {
+                        const reader = new FileReader();
+                        reader.onloadend = async () => {
+                            const base64 = reader.result.split(',')[1];
+                            const voiceRef = collection(db, 'artifacts', appId, 'public', 'data', 'lobbies', currentRoomId, 'voice');
+                            await addDoc(voiceRef, {
+                                uid: currentUser.uid,
+                                name: (document.getElementById('player-name-input').value || "Agente").toUpperCase(),
+                                audio: base64, color: window.playerColor, timestamp: serverTimestamp()
+                            });
+                        };
+                        reader.readAsDataURL(e.data);
+                    }
+                };
+            } catch (err) { console.warn("Mic access failed"); }
+        }
+
+        function playVoice(base64) {
+            const audio = new Audio("data:audio/webm;codecs=opus;base64," + base64);
+            audio.play().catch(e => {});
+        }
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -333,6 +301,7 @@
                 const nameDisplay = document.getElementById('user-display-name');
                 if (nameDisplay) nameDisplay.innerText = (user.isAnonymous ? "INVITADO" : (user.displayName || "AGENTE")).toUpperCase();
                 await loadSavedData();
+                setupVoice();
             }
         });
 
@@ -344,165 +313,21 @@
                 if (snap.exists()) {
                     window.savedData = snap.data();
                     document.getElementById('resume-btn')?.classList.remove('hidden');
-                    const lvlSpan = document.getElementById('saved-level');
-                    if(lvlSpan) lvlSpan.innerText = window.savedData.level;
-                    const nameInp = document.getElementById('player-name-input');
-                    if(nameInp) nameInp.value = window.savedData.name;
+                    document.getElementById('saved-level').innerText = window.savedData.level;
+                    document.getElementById('player-name-input').value = window.savedData.name;
                 }
             } catch (err) {}
         };
 
-        window.saveGameProgress = async (lvl, scr, name, avIdx) => {
-            if (!currentUser) return;
-            try {
-                const saveRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'saveData', 'current');
-                await setDoc(saveRef, { level: lvl, score: scr, name, avatarIdx: avIdx, timestamp: Date.now() });
-            } catch (err) {}
-        };
-
-        window.submitHighScore = async (name, score, level, avatarIdx) => {
-            if (!currentUser) return;
-            try {
-                const scoreRef = doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', currentUser.uid);
-                await setDoc(scoreRef, { name, score, level, avatarIdx, timestamp: Date.now() });
-            } catch (err) {}
-        };
-
-        window.getLeaderboard = async () => {
-            try {
-                const lbRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
-                const snap = await getDocs(lbRef);
-                const scores = [];
-                snap.forEach(doc => scores.push(doc.data()));
-                return scores.sort((a, b) => b.score - a.score).slice(0, 5);
-            } catch (err) { return []; }
-        };
-
-        // SISTEMA DE VOZ
-        window.voiceMessages = {};
-        window.activeVoiceIndicators = {};
-
-        window.submitVoiceMessage = async (roomId, audioBlob, duration) => {
-            if (!currentUser || !roomId || !audioBlob) return null;
-            try {
-                const voiceId = `voice_${currentUser.uid}_${Date.now()}`;
-                const storageRef = ref(storage, `voice_messages/${roomId}/${voiceId}.webm`);
-                await uploadBytes(storageRef, audioBlob);
-                const url = await getDownloadURL(storageRef);
-                
-                const voiceRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', roomId, 'voiceMessages', voiceId);
-                await setDoc(voiceRef, {
-                    url,
-                    uid: currentUser.uid,
-                    name: (document.getElementById('player-name-input').value || "Agente").toUpperCase(),
-                    color: window.playerColor,
-                    duration,
-                    timestamp: serverTimestamp()
-                });
-                return voiceId;
-            } catch (err) {
-                console.error('Error al enviar mensaje de voz:', err);
-                return null;
-            }
-        };
-
-        window.listenToVoiceMessages = (roomId) => {
-            if (!currentUser || !roomId) return;
-            
-            if (voiceUnsubscribe) voiceUnsubscribe();
-            
-            const voiceRef = collection(db, 'artifacts', appId, 'public', 'data', 'lobbies', roomId, 'voiceMessages');
-            voiceUnsubscribe = onSnapshot(voiceRef, (snap) => {
-                snap.docChanges().forEach(change => {
-                    if (change.type === 'added') {
-                        const data = change.doc.data();
-                        if (data.uid !== currentUser.uid) {
-                            playVoiceMessage(data);
-                            showVoiceIndicator(data);
-                        }
-                    }
-                });
-            }, (err) => {
-                console.error('Error escuchando mensajes de voz:', err);
-            });
-        };
-
-        function playVoiceMessage(data) {
-            if (window.voiceMessages[data.url]) return;
-            
-            const audio = new Audio(data.url);
-            audio.volume = 0.7;
-            window.voiceMessages[data.url] = audio;
-            
-            audio.play().catch(err => console.error('Error reproduciendo audio:', err));
-            
-            audio.onended = () => {
-                delete window.voiceMessages[data.url];
-                removeVoiceIndicator(data.uid);
-            };
-        }
-
-        function showVoiceIndicator(data) {
-            if (window.activeVoiceIndicators[data.uid]) {
-                clearTimeout(window.activeVoiceIndicators[data.uid].timer);
-            } else {
-                const indicator = document.createElement('div');
-                indicator.className = 'voice-indicator';
-                indicator.id = `voice-indicator-${data.uid}`;
-                document.body.appendChild(indicator);
-                
-                const remotePlayer = window.remotePlayers.find(p => p.uid === data.uid);
-                if (remotePlayer) {
-                    updateVoiceIndicatorPosition(data.uid, remotePlayer);
-                }
-            }
-            
-            window.activeVoiceIndicators[data.uid] = {
-                data,
-                timer: setTimeout(() => removeVoiceIndicator(data.uid), (data.duration || 3000) + 1000)
-            };
-        }
-
-        function updateVoiceIndicatorPosition(uid, playerData) {
-            const indicator = document.getElementById(`voice-indicator-${uid}`);
-            if (!indicator || !playerData) return;
-            
-            const screenX = (playerData.x - camera.x) * camera.zoom;
-            const screenY = (playerData.y - camera.y) * camera.zoom;
-            
-            indicator.style.left = `${screenX}px`;
-            indicator.style.top = `${screenY - 40}px`;
-        }
-
-        function removeVoiceIndicator(uid) {
-            const indicator = document.getElementById(`voice-indicator-${uid}`);
-            if (indicator) indicator.remove();
-            
-            if (window.activeVoiceIndicators[uid]) {
-                clearTimeout(window.activeVoiceIndicators[uid].timer);
-                delete window.activeVoiceIndicators[uid];
-            }
-        }
-
-        // MULTIPLAYER SYNC
         window.syncMultiplayer = async (roomId, data) => {
             if (!currentUser || !roomId) return;
-            try {
-                const playerRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', roomId, 'players', currentUser.uid);
-                await setDoc(playerRef, { 
-                    ...data, 
-                    uid: currentUser.uid, 
-                    color: window.playerColor, 
-                    timestamp: Date.now(),
-                    isTalking: window.isRecordingVoice || false
-                }, { merge: true });
-            } catch (err) {}
+            const playerRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', roomId, 'players', currentUser.uid);
+            await setDoc(playerRef, { ...data, uid: currentUser.uid, color: window.playerColor, timestamp: Date.now() }, { merge: true });
         };
 
         window.joinMultiplayerRoom = (roomId) => {
             if (!currentUser) return;
             if (multiplayerUnsubscribe) multiplayerUnsubscribe();
-            
             const playersRef = collection(db, 'artifacts', appId, 'public', 'data', 'lobbies', roomId, 'players');
             multiplayerUnsubscribe = onSnapshot(playersRef, (snap) => {
                 const others = [];
@@ -514,44 +339,31 @@
                 });
                 window.remotePlayers = others;
                 updateLobbyPlayersUI(lobbyList);
-            }, () => {});
-
-            if (chatUnsubscribe) chatUnsubscribe();
-            const msgRef = collection(db, 'artifacts', appId, 'public', 'data', 'lobbies', roomId, 'messages');
-            chatUnsubscribe = onSnapshot(msgRef, (snap) => {
-                const msgs = [];
-                snap.forEach(d => msgs.push(d.data()));
-                msgs.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
-                updateChatUI(msgs);
             });
 
-            // Iniciar escucha de mensajes de voz
-            window.listenToVoiceMessages(roomId);
-        };
-
-        window.sendChatMessage = async (roomId, text) => {
-            if (!currentUser || !roomId || !text) return;
-            try {
-                const msgRef = collection(db, 'artifacts', appId, 'public', 'data', 'lobbies', roomId, 'messages');
-                await addDoc(msgRef, {
-                    name: (document.getElementById('player-name-input').value || "Agente").toUpperCase(),
-                    text,
-                    color: window.playerColor,
-                    uid: currentUser.uid,
-                    timestamp: serverTimestamp()
-                });
-            } catch (err) {}
-        };
-
-        window.leaveMultiplayerRoom = async (roomId) => {
-            if (multiplayerUnsubscribe) multiplayerUnsubscribe();
-            if (chatUnsubscribe) chatUnsubscribe();
             if (voiceUnsubscribe) voiceUnsubscribe();
-            if (currentUser && roomId) {
-                const playerRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', roomId, 'players', currentUser.uid);
-                try { await deleteDoc(playerRef); } catch(e) {}
-            }
+            const voiceRef = collection(db, 'artifacts', appId, 'public', 'data', 'lobbies', roomId, 'voice');
+            voiceUnsubscribe = onSnapshot(voiceRef, (snap) => {
+                snap.docChanges().forEach(change => {
+                    if (change.type === "added") {
+                        const data = change.doc.data();
+                        if (data.uid !== currentUser.uid) playVoice(data.audio);
+                        updateRadioFeed(data);
+                    }
+                });
+            });
         };
+
+        function updateRadioFeed(data) {
+            const chatBox = document.getElementById('chat-box');
+            if (!chatBox) return;
+            const entry = document.createElement('div');
+            entry.className = 'voice-entry';
+            entry.style.borderColor = data.color;
+            entry.innerHTML = `<span style="color: ${data.color}">[RADIO] ${data.name}:</span> <span class="text-green-500 text-[7px] animate-pulse">RECIBIENDO...</span>`;
+            chatBox.prepend(entry);
+            if (chatBox.children.length > 8) chatBox.lastChild.remove();
+        }
 
         function updateLobbyPlayersUI(players) {
             const list = document.getElementById('lobby-players-list');
@@ -559,36 +371,46 @@
             list.innerHTML = players.map(p => `
                 <div class="flex items-center justify-between p-2 bg-white/5 rounded-xl border-l-4" style="border-color: ${p.color}">
                     <div class="flex items-center gap-3">
-                        <div class="w-2 h-2 rounded-full ${p.isTalking ? 'bg-red-500 animate-pulse' : 'bg-green-500'}"></div>
-                        <span class="text-xs font-black text-gray-200">${(p.name || 'ANÓNIMO').toUpperCase()}</span>
+                        <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                        <span class="text-xs font-black text-gray-200">${p.name.toUpperCase()}</span>
                     </div>
-                    <span class="text-[8px] text-gray-500 font-bold uppercase tracking-tighter">${p.isTalking ? 'HABLANDO' : 'Conectado'}</span>
                 </div>
             `).join('');
         }
 
-        function updateChatUI(messages) {
-            const lobbyChat = document.getElementById('lobby-chat-messages');
-            const gameChat = document.getElementById('chat-box');
-            if(!lobbyChat && !gameChat) return;
+        const micBtn = document.getElementById('mic-btn');
+        const startMic = (e) => { e.preventDefault(); if (!mediaRecorder || mediaRecorder.state === 'recording') return; micBtn.classList.add('active'); document.getElementById('mic-pulse').classList.remove('hidden'); mediaRecorder.start(); };
+        const stopMic = (e) => { e.preventDefault(); if (!mediaRecorder || mediaRecorder.state === 'inactive') return; micBtn.classList.remove('active'); document.getElementById('mic-pulse').classList.add('hidden'); mediaRecorder.stop(); };
 
-            const content = messages.map(m => `
-                <div class="chat-msg">
-                    <span class="chat-name" style="color: ${m.color}">${m.name}:</span>
-                    <span class="text-white">${m.text}</span>
-                </div>
-            `).join('');
+        micBtn.addEventListener('mousedown', startMic); micBtn.addEventListener('mouseup', stopMic);
+        micBtn.addEventListener('touchstart', startMic); micBtn.addEventListener('touchend', stopMic);
 
-            if(lobbyChat) { lobbyChat.innerHTML = content; lobbyChat.scrollTop = lobbyChat.scrollHeight; }
-            if(gameChat) { gameChat.innerHTML = content; gameChat.scrollTop = gameChat.scrollHeight; }
-        }
+        window.saveGameProgress = async (lvl, scr, name, avIdx) => {
+            if (!currentUser) return;
+            const saveRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'saveData', 'current');
+            await setDoc(saveRef, { level: lvl, score: scr, name, avatarIdx: avIdx, timestamp: Date.now() });
+        };
+
+        window.submitHighScore = async (name, score, level, avatarIdx) => {
+            if (!currentUser) return;
+            const scoreRef = doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', currentUser.uid);
+            await setDoc(scoreRef, { name, score, level, avatarIdx, timestamp: Date.now() });
+        };
+
+        window.getLeaderboard = async () => {
+            const lbRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
+            const snap = await getDocs(lbRef);
+            const scores = [];
+            snap.forEach(doc => scores.push(doc.data()));
+            return scores.sort((a, b) => b.score - a.score).slice(0, 5);
+        };
 
         document.getElementById('google-login-btn').onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
         document.getElementById('guest-login-btn').onclick = () => signInAnonymously(auth);
     </script>
 
 <script>
-    // --- MOTOR DEL JUEGO FUSIONADO ---
+    // --- MOTOR DEL JUEGO ---
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const miniMapCanvas = document.getElementById('mini-map-canvas');
@@ -598,13 +420,9 @@
     let isMultiplayer = false;
     let currentRoomId = null;
     window.remotePlayers = [];
-    window.isRecordingVoice = false;
-    let mediaRecorder = null;
-    let audioChunks = [];
-    let audioStream = null;
 
     const ZOMBIE_TYPES = Array.from({ length: 10 }, (_, i) => ({
-        id: i + 1, videoSrc: `zombie${i+1}.mp4`, radius: (35 + (i * 12)), hp: 140 * Math.pow(1.8, i),
+        id: i + 1, radius: (35 + (i * 12)), hp: 140 * Math.pow(1.8, i),
         speed: 3.5 - (i * 0.3), damage: (4 + (i * 3.5)) * 3, scoreValue: 450 * (i+1),
         color: `hsl(${140 - (i * 14)}, 100%, 50%)`
     }));
@@ -612,169 +430,27 @@
     const ASSETS_URLS = {
         hospital: 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png',
         refuge: 'https://cdn-icons-png.flaticon.com/512/2590/2590525.png',
-        gasStation: 'https://cdn-icons-png.flaticon.com/512/1066/1066744.png',
         hero: [
             'https://cdn-icons-png.flaticon.com/512/3408/3408545.png',
             'https://cdn-icons-png.flaticon.com/512/4140/4140037.png',
             'https://cdn-icons-png.flaticon.com/512/1154/1154443.png',
             'https://cdn-icons-png.flaticon.com/512/606/606553.png'
-        ],
-        bot: 'https://cdn-icons-png.flaticon.com/512/1067/1067357.png'
+        ]
     };
 
     const WEAPONS = {
         KNIFE: { id: 'KNIFE', icon: '🔪', range: 150, damage: 1200, delay: 180, color: '#94a3b8' },
         PISTOL: { id: 'PISTOL', icon: '🔫', speed: 28, damage: 650, delay: 110, color: '#fbbf24', ammo: 100 },
         PLASMA: { id: 'PLASMA', icon: '🔥', speed: 40, damage: 450, delay: 35, color: '#22d3ee', ammo: 300 },
-        ROCKET: { id: 'ROCKET', icon: '🚀', speed: 22, damage: 10000, delay: 800, color: '#f87171', ammo: 30, explosive: true },
-        GRENADE: { id: 'GRENADE', icon: '💣', speed: 14, damage: 12000, delay: 1200, color: '#4ade80', ammo: 25, explosive: true }
+        ROCKET: { id: 'ROCKET', icon: '🚀', speed: 22, damage: 10000, delay: 800, color: '#f87171', ammo: 30 }
     };
 
     let images = {};
-    let zombieVideos = [];
-    let playerVideo, soldierVideo;
-    let player, entities = [], bullets = [], buildings = [], splatters = [], items = [], portals = [];
+    let player, entities = [], bullets = [], buildings = [], splatters = [];
     let camera = { x: 0, y: 0, zoom: 0.8 };
     let keys = {}, touchMove = { x: 0, y: 0 }, touchStart = null;
     let isGameOver = false, isPaused = false, score = 0, kills = 0, targetKills = 100, currentLvl = 1;
     let activeWKey = 'KNIFE', selectedAvatarIdx = 0, isFiring = false, lastFire = 0;
-
-    // SISTEMA DE MICRÓFONO
-    async function initMicrophone() {
-        try {
-            audioStream = await navigator.mediaDevices.getUserMedia({ 
-                audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true
-                }
-            });
-            
-            mediaRecorder = new MediaRecorder(audioStream, {
-                mimeType: 'audio/webm;codecs=opus',
-                audioBitsPerSecond: 128000
-            });
-            
-            mediaRecorder.ondataavailable = (event) => {
-                if (event.data.size > 0) {
-                    audioChunks.push(event.data);
-                }
-            };
-            
-            mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
-                audioChunks = [];
-                
-                const duration = Date.now() - window.voiceStartTime;
-                if (duration > 500 && audioBlob.size > 1000) {
-                    if (isMultiplayer && currentRoomId) {
-                        await window.submitVoiceMessage(currentRoomId, audioBlob, duration);
-                    }
-                }
-                
-                updateMicStatus(false);
-            };
-            
-            console.log('Micrófono inicializado correctamente');
-            return true;
-        } catch (error) {
-            console.error('Error al acceder al micrófono:', error);
-            showToast('⚠️ No se pudo acceder al micrófono');
-            return false;
-        }
-    }
-
-    function startVoiceRecording() {
-        if (!mediaRecorder || window.isRecordingVoice) return;
-        
-        if (mediaRecorder.state === 'recording') {
-            mediaRecorder.stop();
-        }
-        
-        audioChunks = [];
-        mediaRecorder.start();
-        window.voiceStartTime = Date.now();
-        window.isRecordingVoice = true;
-        
-        updateMicStatus(true);
-        
-        if (isMultiplayer && currentRoomId) {
-            window.syncMultiplayer(currentRoomId, { 
-                x: player.x, 
-                y: player.y, 
-                angle: player.angle, 
-                hp: player.hp, 
-                avatarIdx: selectedAvatarIdx, 
-                weapon: activeWKey, 
-                name: document.getElementById('player-name-input').value,
-                isTalking: true
-            });
-        }
-    }
-
-    function stopVoiceRecording() {
-        if (!mediaRecorder || !window.isRecordingVoice) return;
-        
-        if (mediaRecorder.state === 'recording') {
-            mediaRecorder.stop();
-        }
-        
-        window.isRecordingVoice = false;
-        
-        if (isMultiplayer && currentRoomId) {
-            window.syncMultiplayer(currentRoomId, { 
-                x: player.x, 
-                y: player.y, 
-                angle: player.angle, 
-                hp: player.hp, 
-                avatarIdx: selectedAvatarIdx, 
-                weapon: activeWKey, 
-                name: document.getElementById('player-name-input').value,
-                isTalking: false
-            });
-        }
-    }
-
-    function updateMicStatus(isActive) {
-        const micBtn = document.getElementById('mic-btn');
-        const micStatus = document.getElementById('mic-status');
-        
-        if (micBtn) {
-            if (isActive) {
-                micBtn.classList.add('active');
-                micBtn.innerHTML = '🎙️';
-            } else {
-                micBtn.classList.remove('active');
-                micBtn.innerHTML = '🎤';
-            }
-        }
-        
-        if (micStatus) {
-            micStatus.style.display = 'block';
-            micStatus.textContent = `Micrófono: ${isActive ? 'ENCENDIDO 🔴' : 'Apagado'}`;
-            micStatus.style.color = isActive ? '#ef4444' : '#10b981';
-            
-            if (!isActive) {
-                setTimeout(() => {
-                    micStatus.style.display = 'none';
-                }, 2000);
-            }
-        }
-    }
-
-    function loadMedia() {
-        ZOMBIE_TYPES.forEach(t => {
-            const v = document.createElement('video');
-            v.src = t.videoSrc; v.loop = true; v.muted = true; v.autoplay = true; v.playsInline = true;
-            v.play().catch(() => {}); zombieVideos[t.id] = v;
-        });
-        playerVideo = document.createElement('video');
-        playerVideo.src = 'avatar.mp4'; playerVideo.loop = true; playerVideo.muted = true; playerVideo.autoplay = true; playerVideo.playsInline = true;
-        playerVideo.play().catch(() => {});
-        soldierVideo = document.createElement('video');
-        soldierVideo.src = 'avatarsoldado.mp4'; soldierVideo.loop = true; soldierVideo.muted = true; soldierVideo.autoplay = true; soldierVideo.playsInline = true;
-        soldierVideo.play().catch(() => {});
-    }
 
     class Entity {
         constructor(x, y, config) {
@@ -793,18 +469,12 @@
             this.invul = 0;
             this.active = true;
             this.lives = config.lives || 3;
-            this.hasHelmet = false;
         }
 
         update() {
             const dt = gameSpeedFactor;
             if (this.invul > 0) this.invul -= dt;
-            if (this.isPlayer) { 
-                this.checkBuildings(); 
-                this.checkItems(); 
-                this.checkPortals();
-                this.autoAim(); 
-            }
+            if (this.isPlayer) { this.checkBuildings(); this.autoAim(); }
             if (this.team === 'zombie') this.aiZombie();
         }
 
@@ -814,26 +484,6 @@
                 if (d < b.radius + 50) {
                     if (b.type === 'hospital' && this.hp < this.maxHp) this.hp += 0.8 * gameSpeedFactor;
                     if (b.type === 'refuge') this.invul = Math.max(this.invul, 10);
-                }
-            });
-        }
-
-        checkItems() {
-            items.forEach((it, i) => {
-                if (Math.hypot(this.x - it.x, this.y - it.y) < this.radius + 35) {
-                    if (it.type === 'helmet') { this.hasHelmet = true; this.maxHp = 450; this.hp = this.maxHp; }
-                    else if (it.type === 'heart') this.hp = Math.min(this.maxHp, this.hp + 150);
-                    else if (it.type === 'ammo') Object.keys(WEAPONS).forEach(k => { if(WEAPONS[k].ammo) WEAPONS[k].ammo += 150; });
-                    items.splice(i, 1); if (this.isPlayer) updateHUD();
-                }
-            });
-        }
-
-        checkPortals() {
-            portals.forEach((p, i) => {
-                if (Math.hypot(this.x - p.x, this.y - p.y) < this.radius + 40) {
-                    this.x += (Math.random()-0.5) * 6000; this.y += (Math.random()-0.5) * 6000;
-                    portals.splice(i, 1);
                 }
             });
         }
@@ -851,21 +501,25 @@
 
         aiZombie() {
             if (!player) return;
-            let t = player;
-            let d = Math.hypot(t.x - this.x, t.y - this.y);
-            this.angle = Math.atan2(t.y - this.y, t.x - this.x);
+            let humans = [player, ...window.remotePlayers];
+            let nearest = null, minDist = 10000;
+            humans.forEach(h => {
+                let d = Math.hypot(h.x - this.x, h.y - this.y);
+                if (d < minDist) { minDist = d; nearest = h; }
+            });
+            if (!nearest) return;
+            this.angle = Math.atan2(nearest.y - this.y, nearest.x - this.x);
             let s = (this.speed + (currentLvl * 0.1)) * gameSpeedFactor;
             this.x += Math.cos(this.angle) * s; this.y += Math.sin(this.angle) * s;
-            if (d < this.radius + t.radius) t.takeDamage(this.damage * gameSpeedFactor);
+            if (Math.hypot(player.x - this.x, player.y - this.y) < this.radius + player.radius) {
+                player.takeDamage(this.damage * gameSpeedFactor);
+            }
         }
 
         takeDamage(amt) {
             if (this.invul > 0) return;
             this.hp -= amt;
-            if (this.isPlayer) { 
-                spawnSplatter(this.x, this.y, '#ef4444'); 
-                this.invul = 30; // Vibración
-            }
+            if (this.isPlayer) { spawnSplatter(this.x, this.y, '#ef4444'); this.invul = 30; }
             if (this.hp <= 0) {
                 if (this.isPlayer && this.lives > 1) { this.lives--; this.hp = this.maxHp; this.invul = 60; updateHUD(); }
                 else { this.active = false; if (this.isPlayer) endGame(); else onDeath(this); }
@@ -874,17 +528,11 @@
         }
 
         draw() {
-            let sx = (this.x - camera.x) * camera.zoom;
-            let sy = (this.y - camera.y) * camera.zoom;
-            const size = (this.radius * 2) * camera.zoom;
-            
-            if (this.invul > 0 && this.isPlayer) { sx += (Math.random()-0.5)*12*camera.zoom; sy += (Math.random()-0.5)*12*camera.zoom; }
+            let sx = (this.x - camera.x) * camera.zoom, sy = (this.y - camera.y) * camera.zoom, size = (this.radius * 2) * camera.zoom;
             if (sx < -size || sx > canvas.width + size || sy < -size || sy > canvas.height + size) return;
             
-            // Aura de color de jugador
             if(this.isPlayer || this.team === 'remote') {
                 ctx.save(); ctx.translate(sx, sy);
-                ctx.shadowBlur = 15; ctx.shadowColor = this.color;
                 ctx.strokeStyle = this.color; ctx.lineWidth = 2;
                 ctx.beginPath(); ctx.arc(0,0, (this.radius + 5) * camera.zoom, 0, Math.PI*2); ctx.stroke();
                 ctx.restore();
@@ -894,13 +542,9 @@
             if (this.invul > 0 && Math.floor(Date.now()/50)%2===0) ctx.globalAlpha = 0.4;
             ctx.rotate(this.angle + Math.PI/2);
             if (this.team === 'zombie') {
-                const v = zombieVideos[this.zombieTypeId];
-                if (v && v.readyState >= 2) { ctx.rotate(Math.PI); ctx.drawImage(v, -size/2, -size/2, size, size); }
-                else { ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(0,0,size/2,0,Math.PI*2); ctx.fill(); }
+                ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(0,0,size/2,0,Math.PI*2); ctx.fill();
             } else {
-                const v = this.hasHelmet ? soldierVideo : playerVideo;
-                if (v && v.readyState >= 2) ctx.drawImage(v, -size/2, -size/2, size, size);
-                else ctx.drawImage(images.hero[selectedAvatarIdx] || images.hero[0], -size/2, -size/2, size, size);
+                ctx.drawImage(images.hero[this.avatarIdx || selectedAvatarIdx] || images.hero[0], -size/2, -size/2, size, size);
             }
             ctx.restore(); ctx.globalAlpha = 1.0;
         }
@@ -912,9 +556,8 @@
             kills++; score += ZOMBIE_TYPES.find(t => t.id === e.zombieTypeId).scoreValue;
             if (kills >= targetKills) {
                 currentLvl++; targetKills += 100; kills = 0;
-                const anim = document.getElementById('level-up-text');
-                if(anim) { anim.style.opacity = '1'; setTimeout(() => anim.style.opacity = '0', 2500); }
-                window.saveGameProgress(currentLvl, score, document.getElementById('player-name-input').value, selectedAvatarIdx);
+                document.getElementById('level-up-text').style.opacity = '1';
+                setTimeout(() => document.getElementById('level-up-text').style.opacity = '0', 2500);
             }
         }
         updateHUD();
@@ -924,7 +567,7 @@
         let w = WEAPONS[activeWKey];
         bullets.push({
             x: owner.x, y: owner.y, vx: Math.cos(angle) * w.speed * gameSpeedFactor, vy: Math.sin(angle) * w.speed * gameSpeedFactor,
-            damage: (w.damage + (currentLvl * 85)) * 1.5, color: w.color, owner, life: 100, explosive: w.explosive
+            damage: (w.damage + (currentLvl * 85)) * 1.5, color: owner.color, owner, life: 100
         });
     }
 
@@ -932,23 +575,15 @@
         for(let i=0; i<6; i++) splatters.push({ x: x+(Math.random()-0.5)*50, y: y+(Math.random()-0.5)*50, r: 10+Math.random()*25, color, alpha: 0.85 });
     }
 
-    async function startGame(resume) {
+    function startGame(resume) {
         const name = document.getElementById('player-name-input').value.trim();
         if (!name) return;
         hideModals();
         document.getElementById('startup-screen').style.display = 'none';
-        
-        // Inicializar micrófono
-        const micInitialized = await initMicrophone();
-        if (!micInitialized) {
-            showToast('⚠️ Chat de voz no disponible');
-        }
-        
         player = new Entity(0, 0, { type: 'human', isPlayer: true, hp: 350, speed: 9.2, team: 'human', color: window.playerColor });
-        entities = []; bullets = []; buildings = []; splatters = []; items = []; portals = [];
+        entities = []; bullets = []; buildings = []; splatters = [];
         isGameOver = false; score = 0; kills = 0;
         if (resume && window.savedData) { currentLvl = window.savedData.level; score = window.savedData.score; } else currentLvl = 1;
-        loadMedia();
         for(let i=0; i<4; i++) spawnBuilding('hospital');
         for(let i=0; i<5; i++) spawnBuilding('refuge');
         updateHUD(); requestAnimationFrame(gameLoop);
@@ -965,145 +600,74 @@
         let vx = 0, vy = 0;
         if (keys['w']) vy = -1; if (keys['s']) vy = 1; if (keys['a']) vx = -1; if (keys['d']) vx = 1;
         if (touchMove.x || touchMove.y) { vx = touchMove.x; vy = touchMove.y; }
-        if (vx || vy) {
-            let m = Math.hypot(vx, vy);
-            player.x += (vx/m) * player.speed * dt; player.y += (vy/m) * player.speed * dt;
-        }
-
+        if (vx || vy) { let m = Math.hypot(vx, vy); player.x += (vx/m) * player.speed * dt; player.y += (vy/m) * player.speed * dt; }
         camera.x = player.x - (canvas.width/2)/camera.zoom; camera.y = player.y - (canvas.height/2)/camera.zoom;
-        
         if (isFiring && Date.now() - lastFire > WEAPONS[activeWKey].delay / dt) {
-            if (activeWKey === 'KNIFE') {
-                entities.forEach(e => { if (e.active && e.team === 'zombie' && Math.hypot(e.x-player.x, e.y-player.y) < 160) e.takeDamage(1200 * dt); });
-            } else if (WEAPONS[activeWKey].ammo > 0) {
-                spawnBullet(player, player.angle); WEAPONS[activeWKey].ammo--;
-            }
+            if (activeWKey === 'KNIFE') { entities.forEach(e => { if (e.active && e.team === 'zombie' && Math.hypot(e.x-player.x, e.y-player.y) < 160) e.takeDamage(1200 * dt); }); }
+            else if (WEAPONS[activeWKey].ammo > 0) { spawnBullet(player, player.angle); WEAPONS[activeWKey].ammo--; }
             lastFire = Date.now(); updateHUD();
         }
-
         bullets.forEach((b, i) => {
             b.x += b.vx; b.y += b.vy; b.life -= dt;
             entities.forEach(e => { if (e.active && e.team === 'zombie' && Math.hypot(b.x-e.x, b.y-e.y) < e.radius) { e.takeDamage(b.damage); b.life = 0; } });
             if (b.life <= 0) bullets.splice(i, 1);
         });
-
-        if (entities.length < 80 && Math.random() < 0.1 * dt) {
-            let a = Math.random()*Math.PI*2, d = 2000;
-            let typeIdx = Math.floor(Math.random() * Math.min(10, currentLvl));
+        if (entities.length < 50 && Math.random() < 0.1 * dt) {
+            let a = Math.random()*Math.PI*2, d = 2000, typeIdx = Math.floor(Math.random() * Math.min(10, currentLvl));
             const zd = ZOMBIE_TYPES[typeIdx];
             entities.push(new Entity(player.x+Math.cos(a)*d, player.y+Math.sin(a)*d, { type: 'zombie', zombieTypeId: zd.id, hp: zd.hp + (currentLvl * 320), radius: zd.radius, speed: zd.speed, damage: zd.damage, color: zd.color }));
         }
-
         entities.forEach(e => e.update()); player.update();
         entities = entities.filter(e => e.active);
-
-        // Actualizar posiciones de indicadores de voz
-        window.remotePlayers.forEach(p => {
-            if (window.activeVoiceIndicators[p.uid]) {
-                updateVoiceIndicatorPosition(p.uid, p);
-            }
-        });
-
         if (isMultiplayer && Date.now() - lastSyncTime > 100) {
-            window.syncMultiplayer(currentRoomId, { 
-                x: player.x, 
-                y: player.y, 
-                angle: player.angle, 
-                hp: player.hp, 
-                avatarIdx: selectedAvatarIdx, 
-                weapon: activeWKey, 
-                name: document.getElementById('player-name-input').value,
-                isTalking: window.isRecordingVoice 
-            });
+            window.syncMultiplayer(currentRoomId, { x: player.x, y: player.y, angle: player.angle, hp: player.hp, avatarIdx: selectedAvatarIdx, name: (document.getElementById('player-name-input').value || "Agente") });
             lastSyncTime = Date.now();
         }
     }
 
     function draw() {
         ctx.fillStyle = '#020408'; ctx.fillRect(0,0,canvas.width, canvas.height);
-        ctx.strokeStyle = 'rgba(255,255,255,0.02)';
         let s = 150 * camera.zoom;
+        ctx.strokeStyle = 'rgba(255,255,255,0.02)';
         for(let x=(-camera.x*camera.zoom)%s; x<canvas.width; x+=s){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
         for(let y=(-camera.y*camera.zoom)%s; y<canvas.height; y+=s){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
-
-        buildings.forEach(b => {
-            let sx = (b.x-camera.x)*camera.zoom, sy = (b.y-camera.y)*camera.zoom, sz = b.radius*2*camera.zoom;
-            if (b.img) ctx.drawImage(b.img, sx-sz/2, sy-sz/2, sz, sz);
-        });
-        bullets.forEach(b => { ctx.fillStyle = b.color; ctx.beginPath(); ctx.arc((b.x-camera.x)*camera.zoom, (b.y-camera.y)*camera.zoom, 8*camera.zoom, 0, Math.PI*2); ctx.fill(); });
-        
-        // JUGADORES REMOTOS
+        buildings.forEach(b => { let sx = (b.x-camera.x)*camera.zoom, sy = (b.y-camera.y)*camera.zoom, sz = b.radius*2*camera.zoom; if (b.img) ctx.drawImage(b.img, sx-sz/2, sy-sz/2, sz, sz); });
+        bullets.forEach(b => { ctx.fillStyle = b.color; ctx.beginPath(); ctx.arc((b.x-camera.x)*camera.zoom, (b.y-camera.y)*camera.zoom, 5*camera.zoom, 0, Math.PI*2); ctx.fill(); });
         window.remotePlayers.forEach(p => {
             let sx = (p.x-camera.x)*camera.zoom, sy = (p.y-camera.y)*camera.zoom, sz = 50*camera.zoom;
-            // Indicador de voz
-            if (p.isTalking) {
-                ctx.save();
-                ctx.translate(sx, sy);
-                ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
-                ctx.beginPath();
-                ctx.arc(0, 0, (sz/2) + 10, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            }
-            
-            // Aura remota
-            ctx.save(); ctx.translate(sx, sy);
-            ctx.strokeStyle = p.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0,0, 28 * camera.zoom, 0, Math.PI*2); ctx.stroke();
-            ctx.rotate(p.angle + Math.PI/2);
+            ctx.save(); ctx.translate(sx, sy); ctx.strokeStyle = p.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0,0, 28 * camera.zoom, 0, Math.PI*2); ctx.stroke();
             if (images.hero) ctx.drawImage(images.hero[p.avatarIdx || 0], -sz/2, -sz/2, sz, sz);
             ctx.restore();
-            // Barra de vida remota
             ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(sx - 20, sy - 40, 40, 4);
             ctx.fillStyle = p.color; ctx.fillRect(sx - 20, sy - 40, 40 * (p.hp/350), 4);
             ctx.fillStyle = "white"; ctx.font = "bold 8px Orbitron"; ctx.textAlign = "center"; ctx.fillText(p.name.toUpperCase(), sx, sy - 45);
         });
-
         entities.forEach(e => e.draw()); if (player) player.draw();
         drawMiniMap();
     }
 
     function drawMiniMap() {
         if (!player) return;
-        mctx.clearRect(0,0,150,150);
+        mctx.fillStyle = "rgba(0,0,0,0.5)"; mctx.fillRect(0,0,150,150);
         const s = 0.02; const cx = 75; const cy = 75;
         buildings.forEach(b => { mctx.fillStyle = "#3b82f6"; mctx.beginPath(); mctx.arc(cx+(b.x-player.x)*s, cy+(b.y-player.y)*s, 3, 0, Math.PI*2); mctx.fill(); });
         entities.forEach(e => { mctx.fillStyle = "#ef4444"; mctx.beginPath(); mctx.arc(cx+(e.x-player.x)*s, cy+(e.y-player.y)*s, 1, 0, Math.PI*2); mctx.fill(); });
-        mctx.fillStyle = window.playerColor; mctx.beginPath(); mctx.arc(cx, cy, 3, 0, Math.PI*2); mctx.fill();
-        
-        // Mostrar jugadores remotos en minimapa
-        window.remotePlayers.forEach(p => {
-            mctx.fillStyle = p.color;
-            mctx.beginPath();
-            mctx.arc(cx+(p.x-player.x)*s, cy+(p.y-player.y)*s, 2, 0, Math.PI*2);
-            mctx.fill();
-        });
+        mctx.fillStyle = window.playerColor; mctx.beginPath(); mctx.arc(cx, cy, 5, 0, Math.PI*2); mctx.fill();
+        window.remotePlayers.forEach(p => { mctx.fillStyle = p.color; mctx.beginPath(); mctx.arc(cx+(p.x-player.x)*s, cy+(p.y-player.y)*s, 4, 0, Math.PI*2); mctx.fill(); });
     }
 
     function gameLoop() { if (!isGameOver && !isPaused) updateLogic(); draw(); requestAnimationFrame(gameLoop); }
 
     function updateHUD() {
         if (!player) return;
-        const hpBar = document.getElementById('hp-bar');
-        if(hpBar) hpBar.style.width = Math.max(0, (player.hp / player.maxHp) * 100) + '%';
-        const lvD = document.getElementById('lives-display');
-        if(lvD) lvD.innerText = "❤️".repeat(player.lives);
-        const scV = document.getElementById('score-val');
-        if(scV) scV.innerText = score.toString().padStart(5, '0');
-        const lvL = document.getElementById('level-display');
-        if(lvL) lvL.innerText = currentLvl.toString().padStart(2, '0');
-        const wIc = document.getElementById('weapon-icon-btn');
-        if(wIc) wIc.innerText = WEAPONS[activeWKey].icon;
-        const amC = document.getElementById('ammo-count');
-        if(amC) amC.innerText = activeWKey === 'KNIFE' ? '∞' : WEAPONS[activeWKey].ammo;
-        const zRm = document.getElementById('z-remain');
-        if(zRm) zRm.innerText = `${kills}/${targetKills}`;
-        const oPr = document.getElementById('objective-progress');
-        if(oPr) oPr.style.width = Math.min(100, (kills/targetKills)*100) + '%';
+        document.getElementById('hp-bar').style.width = Math.max(0, (player.hp / player.maxHp) * 100) + '%';
+        document.getElementById('lives-display').innerText = "❤️".repeat(player.lives);
+        document.getElementById('level-display').innerText = currentLvl.toString().padStart(2, '0');
+        document.getElementById('weapon-icon-btn').innerText = WEAPONS[activeWKey].icon;
+        document.getElementById('ammo-count').innerText = activeWKey === 'KNIFE' ? '∞' : WEAPONS[activeWKey].ammo;
+        document.getElementById('z-remain').innerText = `${kills}/${targetKills}`;
+        document.getElementById('objective-progress').style.width = Math.min(100, (kills/targetKills)*100) + '%';
     }
-
-    window.showSettings = () => document.getElementById('settings-modal').style.display = 'flex';
-    window.showMultiplayerMenu = () => document.getElementById('multi-modal').style.display = 'flex';
-    window.hideModals = () => document.querySelectorAll('.modal-screen').forEach(m => { if(m.id !== 'startup-screen') m.style.display = 'none'; });
 
     window.joinLobby = () => {
         const rid = document.getElementById('room-id-input').value.trim().toLowerCase();
@@ -1118,47 +682,22 @@
         isMultiplayer = true;
     };
 
-    window.sendChatMessageLobby = () => {
-        const inp = document.getElementById('lobby-chat-input');
-        const txt = inp.value.trim();
-        if (txt && currentRoomId) { window.sendChatMessage(currentRoomId, txt); inp.value = ''; }
+    window.toggleChat = () => {
+        const cont = document.getElementById('chat-container');
+        cont.classList.toggle('minimized');
+        document.getElementById('chat-toggle-icon').innerText = cont.classList.contains('minimized') ? '▲' : '▼';
+        document.getElementById('chat-toggle-icon-2').innerText = cont.classList.contains('minimized') ? '▲' : '▼';
     };
 
-    window.exitToMenu = async () => { 
-        stopVoiceRecording();
-        if (audioStream) {
-            audioStream.getTracks().forEach(track => track.stop());
-        }
-        if(isMultiplayer) await window.leaveMultiplayerRoom(currentRoomId); 
-        location.reload(); 
-    };
-    
+    window.hideModals = () => document.querySelectorAll('.modal-screen').forEach(m => { if(m.id !== 'startup-screen') m.style.display = 'none'; });
     window.selectAvatar = (idx) => { selectedAvatarIdx = idx; document.querySelectorAll('.avatar-card').forEach((c, i) => c.classList.toggle('selected', i === idx)); };
-    window.togglePause = () => { isPaused = !isPaused; document.getElementById('pause-btn').innerText = isPaused ? '▶️' : '⏸️'; };
-    
+    window.togglePause = () => { isPaused = !isPaused; };
+    window.exitToMenu = () => location.reload();
+
     document.getElementById('speed-slider').oninput = (e) => {
         gameSpeedFactor = parseFloat(e.target.value);
         document.getElementById('speed-val').innerText = gameSpeedFactor.toFixed(1) + "x";
     };
-
-    // Control del micrófono
-    const micBtn = document.getElementById('mic-btn');
-    if (micBtn) {
-        micBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            startVoiceRecording();
-        });
-        
-        micBtn.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            stopVoiceRecording();
-        });
-        
-        micBtn.addEventListener('touchcancel', (e) => {
-            e.preventDefault();
-            stopVoiceRecording();
-        });
-    }
 
     const swapBtn = document.getElementById('swap-weapon-btn');
     swapBtn.addEventListener('touchstart', (e) => { e.preventDefault(); let ks = Object.keys(WEAPONS); let i = ks.indexOf(activeWKey); activeWKey = ks[(i+1)%ks.length]; updateHUD(); });
@@ -1185,29 +724,11 @@
     });
     canvas.addEventListener('touchend', (e) => { if (e.touches.length === 0) { touchStart = null; touchMove = { x: 0, y: 0 }; } });
 
-    window.onkeydown = (e) => {
-        keys[e.key.toLowerCase()] = true;
-        if (e.key === 'v' || e.key === 'V') {
-            startVoiceRecording();
-        }
-    };
-    
-    window.onkeyup = (e) => {
-        keys[e.key.toLowerCase()] = false;
-        if (e.key === 'v' || e.key === 'V') {
-            stopVoiceRecording();
-        }
-    };
-    
+    window.onkeydown = (e) => keys[e.key.toLowerCase()] = true; window.onkeyup = (e) => keys[e.key.toLowerCase()] = false;
     window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
 
     function endGame() {
-        isGameOver = true;
-        stopVoiceRecording();
-        if (audioStream) {
-            audioStream.getTracks().forEach(track => track.stop());
-        }
-        
+        isGameOver = true; 
         document.getElementById('game-over').style.display = 'flex';
         document.getElementById('final-stats').innerHTML = `NIVEL: ${currentLvl} | SCORE: ${score}`;
         window.submitHighScore(document.getElementById('player-name-input').value || "Agente", score, currentLvl, selectedAvatarIdx);
@@ -1222,4 +743,3 @@
 </script>
 </body>
 </html>
-[file content end]
