@@ -41,7 +41,7 @@
             box-shadow: 0 0 30px rgba(239, 68, 68, 0.4);
         }
 
-        /* Voice Chat Buttons */
+        /* Walkie Talkie UI */
         #mic-btn {
             width: 70px; height: 70px;
             background: radial-gradient(circle, #334155 0%, #0f172a 100%);
@@ -59,7 +59,7 @@
             transform: scale(1.1);
         }
 
-        /* Chat Panel */
+        /* Chat Minimizable */
         #chat-container {
             position: absolute; bottom: 280px; left: 20px;
             width: 240px; transition: all 0.3s ease;
@@ -78,11 +78,11 @@
         }
         #chat-container.minimized #chat-box { height: 0; padding: 0; border: none; }
 
-        .voice-entry {
-            margin-bottom: 4px; padding: 4px 8px;
-            background: rgba(255,255,255,0.03);
-            border-radius: 4px; border-left: 2px solid transparent;
-            animation: fadeIn 0.2s ease;
+        .voice-log {
+            margin-bottom: 4px; padding: 4px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px; border-left: 2px solid;
+            animation: fadeIn 0.3s ease;
         }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -181,7 +181,6 @@
             <div class="flex flex-col gap-1">
                 <div class="flex items-center gap-2">
                     <div id="lives-display" class="text-2xl drop-shadow-lg">❤️❤️❤️</div>
-                    <button onclick="togglePause()" class="clickable bg-white/10 p-2 rounded-xl text-xl backdrop-blur-md border border-white/20">⏸️</button>
                     <button onclick="exitToMenu()" class="clickable bg-white/10 p-2 rounded-xl text-xl backdrop-blur-md border border-white/20">🏠</button>
                 </div>
                 <div class="w-40 h-3 bg-gray-900/80 rounded-full border border-white/10 overflow-hidden mt-1 shadow-inner">
@@ -204,13 +203,13 @@
             </div>
         </div>
 
-        <!-- Panel de Radio -->
+        <!-- Chat Minimizable (Voice) -->
         <div id="chat-container">
             <button onclick="toggleChat()" class="clickable w-full bg-slate-800/90 text-[8px] font-black py-1.5 rounded-t-lg backdrop-blur-md uppercase tracking-[0.2em] flex items-center justify-center gap-2 border-b border-white/10">
-                <span id="chat-toggle-icon">▼</span> RADIO FEED <span id="chat-toggle-icon-2">▼</span>
+                <span id="chat-toggle-icon">▼</span> RADIO COMMS <span id="chat-toggle-icon-2">▼</span>
             </button>
             <div id="chat-box">
-                <div class="text-[8px] text-gray-600 text-center uppercase tracking-widest mt-4">Escaneando Frecuencias...</div>
+                <div class="text-[8px] text-gray-600 text-center uppercase mt-4">Escaneando Red...</div>
             </div>
         </div>
 
@@ -219,7 +218,7 @@
         <div class="flex justify-between items-end p-2">
             <div class="bg-black/60 p-3 rounded-2xl backdrop-blur-md border border-white/10 w-48 flex flex-col gap-1">
                 <div class="flex justify-between gap-6 items-center">
-                    <span class="text-[9px] text-green-400 font-black uppercase">Fase Horda</span>
+                    <span class="text-[9px] text-green-400 font-black uppercase">Objetivo Horda</span>
                     <span id="z-remain" class="text-xs font-mono font-bold text-white">0/100</span>
                 </div>
                 <div class="w-full h-1 bg-gray-800 rounded-full overflow-hidden">
@@ -228,7 +227,7 @@
             </div>
             
             <div class="flex gap-4 items-center">
-                <!-- Walkie Talkie Hold Button -->
+                <!-- Voice Chat Push to Talk -->
                 <div class="relative">
                     <button id="mic-btn" class="clickable select-none flex items-center justify-center">🎤</button>
                     <div id="mic-pulse" class="hidden mic-pulse"></div>
@@ -240,21 +239,18 @@
 
     <!-- Game Over -->
     <div id="game-over" class="modal-screen clickable">
-        <h2 class="text-6xl font-black mb-4 text-red-600 font-game italic drop-shadow-2xl uppercase text-center">ELIMINADO</h2>
+        <h2 class="text-6xl font-black mb-4 text-red-600 font-game italic drop-shadow-2xl uppercase">ELIMINADO</h2>
         <div id="final-stats" class="text-gray-400 mb-8 font-mono text-center text-lg leading-relaxed"></div>
-        <div class="w-full max-w-sm bg-black/40 p-4 rounded-2xl border border-white/10 mb-6">
-            <h3 class="text-blue-400 font-bold text-[10px] uppercase mb-3 text-center">Salón de la Fama</h3>
-            <div id="leaderboard-list" class="flex flex-col gap-2"></div>
-        </div>
-        <button onclick="location.reload()" class="bg-white text-black font-black py-5 px-16 rounded-2xl text-xl font-game shadow-2xl">REINTENTAR</button>
+        <button onclick="location.reload()" class="bg-white text-black font-black py-5 px-16 rounded-2xl text-xl font-game shadow-2xl">VOLVER A INTENTAR</button>
     </div>
 
     <canvas id="gameCanvas"></canvas>
 
+    <!-- Firebase Script -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, onSnapshot, deleteDoc, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, deleteDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
@@ -267,14 +263,14 @@
         let voiceUnsubscribe = null;
         window.playerColor = `hsl(${Math.random() * 360}, 80%, 60%)`;
 
-        // --- RADIO (VOICE) SYSTEM ---
+        // --- RADIO (VOICE) TACTICAL SYSTEM ---
         let mediaRecorder = null;
-        let audioStream = null;
+        let audioChunks = [];
 
-        async function setupVoice() {
+        async function initMic() {
             try {
-                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(audioStream, { mimeType: 'audio/webm;codecs=opus' });
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
                 
                 mediaRecorder.ondataavailable = async (e) => {
                     if (e.data.size > 0 && currentRoomId) {
@@ -293,17 +289,14 @@
                         reader.readAsDataURL(e.data);
                     }
                 };
-            } catch (err) { console.error("Mic access failed", err); }
+            } catch (err) { console.warn("Micrófono no disponible."); }
         }
 
-        function playRadioChunk(base64) {
+        function playVoice(base64) {
             const audio = new Audio("data:audio/webm;codecs=opus;base64," + base64);
-            // Aplicar efecto de radio (filtro pasabanda simple via Gain/Compresor si fuera WebAudio, pero aquí directo para estabilidad)
-            audio.volume = 1.0;
             audio.play().catch(e => {});
         }
 
-        // --- AUTH & MULTIPLAYER ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
@@ -311,8 +304,7 @@
                 document.getElementById('setup-ui')?.classList.remove('hidden');
                 const nameDisplay = document.getElementById('user-display-name');
                 if (nameDisplay) nameDisplay.innerText = (user.isAnonymous ? "INVITADO" : (user.displayName || "AGENTE")).toUpperCase();
-                await loadSavedData();
-                setupVoice();
+                initMic();
             } else {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
@@ -321,18 +313,6 @@
                 }
             }
         });
-
-        const loadSavedData = async () => {
-            if (!currentUser) return;
-            const saveRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'saveData', 'current');
-            const snap = await getDoc(saveRef);
-            if (snap.exists()) {
-                window.savedData = snap.data();
-                document.getElementById('resume-btn')?.classList.remove('hidden');
-                document.getElementById('saved-level').innerText = window.savedData.level;
-                document.getElementById('player-name-input').value = window.savedData.name;
-            }
-        };
 
         window.syncMultiplayer = async (roomId, data) => {
             if (!currentUser || !roomId) return;
@@ -343,6 +323,7 @@
         window.joinMultiplayerRoom = (roomId) => {
             if (!currentUser) return;
             if (multiplayerUnsubscribe) multiplayerUnsubscribe();
+            
             const playersRef = collection(db, 'artifacts', appId, 'public', 'data', 'lobbies', roomId, 'players');
             multiplayerUnsubscribe = onSnapshot(playersRef, (snap) => {
                 const others = [];
@@ -362,20 +343,20 @@
                 snap.docChanges().forEach(change => {
                     if (change.type === "added") {
                         const data = change.doc.data();
-                        if (data.uid !== currentUser.uid) playRadioChunk(data.audio);
-                        updateRadioHUD(data);
+                        if (data.uid !== currentUser.uid) playVoice(data.audio);
+                        logVoice(data);
                     }
                 });
             });
         };
 
-        function updateRadioHUD(data) {
+        function logVoice(data) {
             const chatBox = document.getElementById('chat-box');
             if (!chatBox) return;
             const entry = document.createElement('div');
-            entry.className = 'voice-entry';
-            entry.style.borderLeftColor = data.color;
-            entry.innerHTML = `<span class="font-black" style="color: ${data.color}">[RADIO] ${data.name}:</span> <span class="text-green-400 animate-pulse text-[7px] uppercase tracking-tighter">Entrante...</span>`;
+            entry.className = 'voice-log';
+            entry.style.borderColor = data.color;
+            entry.innerHTML = `<span style="color: ${data.color}">[RADIO] ${data.name}:</span> <span class="text-green-500 text-[7px] animate-pulse">TRANSMITIENDO...</span>`;
             chatBox.prepend(entry);
             if (chatBox.children.length > 8) chatBox.lastChild.remove();
         }
@@ -387,52 +368,42 @@
                 <div class="flex items-center justify-between p-2 bg-white/5 rounded-xl border-l-4" style="border-color: ${p.color}">
                     <div class="flex items-center gap-3">
                         <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                        <span class="text-xs font-black text-gray-200">${(p.name || 'AGENTE').toUpperCase()}</span>
+                        <span class="text-xs font-black text-gray-200">${p.name.toUpperCase()}</span>
                     </div>
                 </div>
             `).join('');
         }
 
-        // Mic Handlers: PUSH TO TALK
+        // PUSH TO TALK HANDLERS
         const micBtn = document.getElementById('mic-btn');
-        const startMic = (e) => {
+        const micPulse = document.getElementById('mic-pulse');
+        
+        const startVoice = (e) => {
             e.preventDefault();
             if (!mediaRecorder || mediaRecorder.state === 'recording') return;
             micBtn.classList.add('active');
-            document.getElementById('mic-pulse').classList.remove('hidden');
+            micPulse.classList.remove('hidden');
             mediaRecorder.start();
         };
-        const stopMic = (e) => {
+
+        const stopVoice = (e) => {
             e.preventDefault();
             if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
             micBtn.classList.remove('active');
-            document.getElementById('mic-pulse').classList.add('hidden');
+            micPulse.classList.add('hidden');
             mediaRecorder.stop();
         };
 
-        micBtn.addEventListener('touchstart', startMic);
-        micBtn.addEventListener('touchend', stopMic);
-        micBtn.addEventListener('mousedown', startMic);
-        micBtn.addEventListener('mouseup', stopMic);
-        micBtn.addEventListener('mouseleave', stopMic);
+        micBtn.addEventListener('mousedown', startVoice);
+        micBtn.addEventListener('mouseup', stopVoice);
+        micBtn.addEventListener('touchstart', startVoice);
+        micBtn.addEventListener('touchend', stopVoice);
+        micBtn.addEventListener('mouseleave', stopVoice);
 
-        // Globals for HighScores
-        window.submitHighScore = async (name, score, level, avatarIdx) => {
-            if (!currentUser) return;
-            const scoreRef = doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', currentUser.uid);
-            await setDoc(scoreRef, { name, score, level, avatarIdx, timestamp: Date.now() });
-        };
-        window.getLeaderboard = async () => {
-            const lbRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
-            const snap = await getDocs(lbRef);
-            const scores = [];
-            snap.forEach(doc => scores.push(doc.data()));
-            return scores.sort((a, b) => b.score - a.score).slice(0, 5);
-        };
     </script>
 
 <script>
-    // --- GAME ENGINE ---
+    // --- MOTOR DEL JUEGO FUSIONADO ---
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const miniMapCanvas = document.getElementById('mini-map-canvas');
@@ -464,7 +435,7 @@
         KNIFE: { id: 'KNIFE', icon: '🔪', range: 150, damage: 1200, delay: 180, color: '#94a3b8' },
         PISTOL: { id: 'PISTOL', icon: '🔫', speed: 28, damage: 650, delay: 110, color: '#fbbf24', ammo: 100 },
         PLASMA: { id: 'PLASMA', icon: '🔥', speed: 40, damage: 450, delay: 35, color: '#22d3ee', ammo: 300 },
-        ROCKET: { id: 'ROCKET', icon: '🚀', speed: 22, damage: 10000, delay: 800, color: '#f87171', ammo: 30 }
+        ROCKET: { id: 'ROCKET', icon: '🚀', speed: 22, damage: 10000, delay: 800, color: '#f87171', ammo: 30, explosive: true }
     };
 
     let images = {};
@@ -523,12 +494,12 @@
 
         aiZombie() {
             if (!player) return;
-            // Target nearest human player (either local or remote)
-            let targets = [player, ...window.remotePlayers];
-            let nearest = null, minDist = 99999;
-            targets.forEach(t => {
-                let d = Math.hypot(t.x - this.x, t.y - this.y);
-                if (d < minDist) { minDist = d; nearest = t; }
+            // Persigue al humano más cercano (local o remoto)
+            let humans = [player, ...window.remotePlayers];
+            let nearest = null, minDist = 10000;
+            humans.forEach(h => {
+                let d = Math.hypot(h.x - this.x, h.y - this.y);
+                if (d < minDist) { minDist = d; nearest = h; }
             });
 
             if (!nearest) return;
@@ -536,9 +507,10 @@
             let s = (this.speed + (currentLvl * 0.1)) * gameSpeedFactor;
             this.x += Math.cos(this.angle) * s; this.y += Math.sin(this.angle) * s;
             
-            // Only damage local player if close enough
-            let distLocal = Math.hypot(player.x - this.x, player.y - this.y);
-            if (distLocal < this.radius + player.radius) player.takeDamage(this.damage * gameSpeedFactor);
+            // Daño al local si está cerca
+            if (Math.hypot(player.x - this.x, player.y - this.y) < this.radius + player.radius) {
+                player.takeDamage(this.damage * gameSpeedFactor);
+            }
         }
 
         takeDamage(amt) {
@@ -556,9 +528,11 @@
             let sx = (this.x - camera.x) * camera.zoom, sy = (this.y - camera.y) * camera.zoom, size = (this.radius * 2) * camera.zoom;
             if (sx < -size || sx > canvas.width + size || sy < -size || sy > canvas.height + size) return;
             
+            // Aura del color del equipo
             if(this.isPlayer || this.team === 'remote') {
                 ctx.save(); ctx.translate(sx, sy);
-                ctx.strokeStyle = this.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0,0, (this.radius + 5) * camera.zoom, 0, Math.PI*2); ctx.stroke();
+                ctx.strokeStyle = this.color; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(0,0, (this.radius + 5) * camera.zoom, 0, Math.PI*2); ctx.stroke();
                 ctx.restore();
             }
 
@@ -568,7 +542,7 @@
             if (this.team === 'zombie') {
                 ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(0,0,size/2,0,Math.PI*2); ctx.fill();
             } else {
-                ctx.drawImage(images.hero[this.isPlayer ? selectedAvatarIdx : (this.avatarIdx || 0)] || images.hero[0], -size/2, -size/2, size, size);
+                ctx.drawImage(images.hero[this.avatarIdx || selectedAvatarIdx] || images.hero[0], -size/2, -size/2, size, size);
             }
             ctx.restore(); ctx.globalAlpha = 1.0;
         }
@@ -652,8 +626,8 @@
         entities.forEach(e => e.update()); player.update();
         entities = entities.filter(e => e.active);
 
-        if (currentRoomId && Date.now() - lastSyncTime > 100) {
-            window.syncMultiplayer(currentRoomId, { x: player.x, y: player.y, angle: player.angle, hp: player.hp, avatarIdx: selectedAvatarIdx, name: document.getElementById('player-name-input').value });
+        if (isMultiplayer && Date.now() - lastSyncTime > 100) {
+            window.syncMultiplayer(currentRoomId, { x: player.x, y: player.y, angle: player.angle, hp: player.hp, avatarIdx: selectedAvatarIdx, name: (document.getElementById('player-name-input').value || "Agente") });
             lastSyncTime = Date.now();
         }
     }
@@ -692,11 +666,13 @@
         const s = 0.02; const cx = 75; const cy = 75;
         buildings.forEach(b => { mctx.fillStyle = "#3b82f6"; mctx.beginPath(); mctx.arc(cx+(b.x-player.x)*s, cy+(b.y-player.y)*s, 3, 0, Math.PI*2); mctx.fill(); });
         entities.forEach(e => { mctx.fillStyle = "#ef4444"; mctx.beginPath(); mctx.arc(cx+(e.x-player.x)*s, cy+(e.y-player.y)*s, 1, 0, Math.PI*2); mctx.fill(); });
+        
         // Local Player
-        mctx.fillStyle = window.playerColor; mctx.beginPath(); mctx.arc(cx, cy, 4, 0, Math.PI*2); mctx.fill();
-        // Remote Players on Minimap with their colors
+        mctx.fillStyle = window.playerColor; mctx.beginPath(); mctx.arc(cx, cy, 5, 0, Math.PI*2); mctx.fill();
+        
+        // Remote Players
         window.remotePlayers.forEach(p => {
-            mctx.fillStyle = p.color; mctx.beginPath(); mctx.arc(cx+(p.x-player.x)*s, cy+(p.y-player.y)*s, 3, 0, Math.PI*2); mctx.fill();
+            mctx.fillStyle = p.color; mctx.beginPath(); mctx.arc(cx+(p.x-player.x)*s, cy+(p.y-player.y)*s, 4, 0, Math.PI*2); mctx.fill();
         });
     }
 
@@ -729,6 +705,8 @@
     window.toggleChat = () => {
         const cont = document.getElementById('chat-container');
         cont.classList.toggle('minimized');
+        document.getElementById('chat-toggle-icon').innerText = cont.classList.contains('minimized') ? '▲' : '▼';
+        document.getElementById('chat-toggle-icon-2').innerText = cont.classList.contains('minimized') ? '▲' : '▼';
     };
 
     window.hideModals = () => document.querySelectorAll('.modal-screen').forEach(m => { if(m.id !== 'startup-screen') m.style.display = 'none'; });
@@ -773,14 +751,6 @@
         isGameOver = true; 
         document.getElementById('game-over').style.display = 'flex';
         document.getElementById('final-stats').innerHTML = `NIVEL: ${currentLvl} | SCORE: ${score}`;
-        window.submitHighScore(document.getElementById('player-name-input').value || "Agente", score, currentLvl, selectedAvatarIdx);
-        window.getLeaderboard().then(lb => {
-            document.getElementById('leaderboard-list').innerHTML = lb.map((s, i) => `
-                <div class="flex justify-between items-center bg-white/5 p-2 rounded-lg text-[10px]">
-                    <span class="text-white">#${i+1} <b>${s.name}</b></span>
-                    <span class="text-blue-400 font-bold">${s.score} pts</span>
-                </div>`).join('');
-        });
     }
 </script>
 </body>
