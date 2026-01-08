@@ -67,6 +67,7 @@
 
         #mini-map-canvas { width: 100%; height: 100%; }
 
+        /* Chat UI */
         #chat-box {
             position: absolute; bottom: 280px; left: 20px;
             width: 220px; max-height: 140px;
@@ -142,7 +143,7 @@
         <h2 class="text-3xl font-game font-black text-purple-400 mb-4 italic text-center">ZONA DE DESPLIEGUE</h2>
         <div id="lobby-ui" class="w-full max-w-sm flex flex-col gap-4">
             <input id="room-id-input" type="text" placeholder="CÓDIGO DE SALA" class="bg-slate-900 border-2 border-slate-700 text-white p-4 rounded-2xl text-center font-bold focus:border-purple-500 outline-none uppercase w-full clickable">
-            <button onclick="joinLobby()" class="w-full bg-purple-600 text-white font-black py-4 rounded-2xl font-game shadow-lg clickable">CONECTAR</button>
+            <button onclick="joinLobby()" class="w-full bg-purple-600 text-white font-black py-4 rounded-2xl font-game shadow-lg clickable">CONECTAR SALA</button>
             <div id="lobby-players-list" class="flex flex-col gap-2 max-h-32 overflow-y-auto"></div>
             <button onclick="hideModals()" class="w-full text-gray-500 font-bold py-2 text-xs uppercase clickable">Atrás</button>
         </div>
@@ -211,8 +212,12 @@
     <!-- Game Over -->
     <div id="game-over" class="modal-screen clickable text-center">
         <h2 class="text-6xl font-black mb-4 text-red-600 font-game italic drop-shadow-2xl uppercase">HAS CAÍDO</h2>
-        <div id="final-stats" class="text-white mb-8 font-mono text-lg"></div>
-        <button onclick="location.reload()" class="bg-white text-black font-black py-5 px-16 rounded-2xl text-xl font-game shadow-2xl">REINTENTAR</button>
+        <div id="final-stats" class="text-white mb-8 font-mono text-center text-lg leading-relaxed"></div>
+        <div class="w-full max-w-sm bg-black/40 p-4 rounded-2xl border border-white/10 mb-6">
+            <h3 class="text-blue-400 font-bold text-[10px] uppercase mb-3 text-center">Ranking Global</h3>
+            <div id="leaderboard-list" class="flex flex-col gap-2"></div>
+        </div>
+        <button onclick="location.reload()" class="bg-white text-black font-black py-5 px-16 rounded-2xl text-xl font-game shadow-2xl">VOLVER A INTENTAR</button>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -221,7 +226,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, onSnapshot, deleteDoc, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyDM9GK7_gnd0GaVbxwK9xnwl0qk75MnFXw",
@@ -236,7 +241,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = 'zombie-ultimate-v8-mic-zones';
+        const appId = 'zombie-ultimate-v4-fusion';
 
         let currentUser = null;
         let globalChatUnsub = null;
@@ -254,11 +259,12 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                document.getElementById('setup-ui')?.classList.remove('hidden');
                 document.getElementById('auth-ui')?.classList.add('hidden');
+                document.getElementById('setup-ui')?.classList.remove('hidden');
                 const nameDisplay = document.getElementById('user-display-name');
                 if (nameDisplay) nameDisplay.innerText = (user.isAnonymous ? "INVITADO" : (user.displayName || "AGENTE")).toUpperCase();
                 initGlobalChat();
+                await loadSavedData();
             } else {
                 signInAnonymously(auth);
             }
@@ -266,7 +272,7 @@
 
         const initGlobalChat = () => {
             if (globalChatUnsub) globalChatUnsub();
-            const ref = collection(db, 'artifacts', appId, 'public', 'data', 'global_chat');
+            const ref = collection(db, 'artifacts', appId, 'public', 'data', 'chat');
             globalChatUnsub = onSnapshot(ref, (snap) => {
                 const msgs = [];
                 snap.forEach(d => msgs.push(d.data()));
@@ -278,7 +284,7 @@
         window.sendGlobalMessage = async () => {
             const inp = document.getElementById('global-chat-input');
             if(!inp.value.trim() || !currentUser) return;
-            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'global_chat'), {
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'chat'), {
                 name: document.getElementById('player-name-input').value || "Agente",
                 text: inp.value,
                 color: window.playerColor,
@@ -293,10 +299,52 @@
             boxes.forEach(box => { if(box) { box.innerHTML = html; box.scrollTop = box.scrollHeight; } });
         }
 
+        const loadSavedData = async () => {
+            if (!currentUser) return;
+            try {
+                const saveRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'saveData', 'current');
+                const snap = await getDoc(saveRef);
+                if (snap.exists()) {
+                    window.savedData = snap.data();
+                    document.getElementById('resume-btn')?.classList.remove('hidden');
+                    const lvlSpan = document.getElementById('saved-level');
+                    if(lvlSpan) lvlSpan.innerText = window.savedData.level;
+                    const nameInp = document.getElementById('player-name-input');
+                    if(nameInp) nameInp.value = window.savedData.name;
+                }
+            } catch (err) {}
+        };
+
+        window.saveGameProgress = async (lvl, scr, name, avIdx) => {
+            if (!currentUser) return;
+            try {
+                const saveRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'saveData', 'current');
+                await setDoc(saveRef, { level: lvl, score: scr, name, avatarIdx: avIdx, timestamp: Date.now() });
+            } catch (err) {}
+        };
+
+        window.submitHighScore = async (name, score, level, avatarIdx) => {
+            if (!currentUser) return;
+            try {
+                const scoreRef = doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', currentUser.uid);
+                await setDoc(scoreRef, { name, score, level, avatarIdx, timestamp: Date.now() });
+            } catch (err) {}
+        };
+
+        window.getLeaderboard = async () => {
+            try {
+                const lbRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
+                const snap = await getDocs(lbRef);
+                const scores = [];
+                snap.forEach(doc => scores.push(doc.data()));
+                return scores.sort((a, b) => b.score - a.score).slice(0, 5);
+            } catch (err) { return []; }
+        };
+
         window.syncMultiplayer = async (roomId, data) => {
             if (!currentUser || !roomId) return;
             await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', roomId, 'players', currentUser.uid), 
-                { ...data, color: window.playerColor, timestamp: Date.now() }, { merge: true });
+                { ...data, uid: currentUser.uid, color: window.playerColor, timestamp: Date.now() }, { merge: true });
         };
 
         window.joinMultiplayerRoom = (roomId) => {
@@ -325,7 +373,7 @@
     const ctx = canvas.getContext('2d');
     const miniMapCanvas = document.getElementById('mini-map-canvas');
     const mctx = miniMapCanvas.getContext('2d');
-
+    
     let gameSpeedFactor = 1.0;
     let isMultiplayer = false;
     let currentRoomId = null;
@@ -358,7 +406,7 @@
     };
 
     let images = {}, zombieVideos = [], playerVideo;
-    let player, entities = [], bullets = [], enemyBullets = [], buildings = [], splatters = [];
+    let player, entities = [], bullets = [], enemyBullets = [], buildings = [], splatters = [], items = [];
     let camera = { x: 0, y: 0, zoom: 0.8 }, keys = {}, touchMove = { x: 0, y: 0 }, touchStart = null;
     let isGameOver = false, isPaused = false, score = 0, kills = 0, targetKills = 100, currentLvl = 1;
     let activeWKey = 'KNIFE', selectedAvatarIdx = 0, isFiring = false, lastFire = 0;
@@ -390,8 +438,8 @@
                 this.aiZombie();
                 if (currentLvl >= 4 && Date.now() - this.lastShot > 3500 / dt) {
                     const d = Math.hypot(player.x - this.x, player.y - this.y);
-                    if (d < 500 && !player.isInvisible) {
-                        enemyBullets.push({ x: this.x, y: this.y, vx: Math.cos(this.angle)*12, vy: Math.sin(this.angle)*12, damage: 25 * currentLvl, life: 120 });
+                    if (d < 550 && !player.isInvisible) {
+                        enemyBullets.push({ x: this.x, y: this.y, vx: Math.cos(this.angle)*11, vy: Math.sin(this.angle)*11, damage: 25 * currentLvl, life: 110 });
                         this.lastShot = Date.now();
                     }
                 }
@@ -404,8 +452,8 @@
                 let d = Math.hypot(this.x - b.x, this.y - b.y);
                 if (d < b.radius + 40) {
                     if (b.type === 'bunker') {
-                        if (this.hp < this.maxHp) this.hp += 0.4 * gameSpeedFactor;
-                        Object.keys(WEAPONS).forEach(k => { if(WEAPONS[k].ammo && WEAPONS[k].ammo < 200) WEAPONS[k].ammo += 0.2; });
+                        if (this.hp < this.maxHp) this.hp += 0.5 * gameSpeedFactor;
+                        Object.keys(WEAPONS).forEach(k => { if(WEAPONS[k].ammo && WEAPONS[k].ammo < 200) WEAPONS[k].ammo += 0.3; });
                     }
                     if (b.type === 'grass') this.isInvisible = true;
                 }
@@ -421,7 +469,7 @@
         aiZombie() {
             if (!player || player.isInvisible) return;
             this.angle = Math.atan2(player.y - this.y, player.x - this.x);
-            let s = (this.speed + (currentLvl * 0.12)) * gameSpeedFactor;
+            let s = (this.speed + (currentLvl * 0.13)) * gameSpeedFactor;
             this.x += Math.cos(this.angle) * s; this.y += Math.sin(this.angle) * s;
             if (Math.hypot(player.x - this.x, player.y - this.y) < this.radius + player.radius) {
                 player.takeDamage(this.damage * (1 + currentLvl * 0.2) * gameSpeedFactor);
@@ -448,7 +496,7 @@
 
             ctx.save(); ctx.translate(sx, sy);
             if (this.invul > 0 && Math.floor(Date.now()/50)%2===0) ctx.globalAlpha = 0.4;
-            if (this.isInvisible) ctx.globalAlpha = 0.2;
+            if (this.isInvisible) ctx.globalAlpha = 0.25;
 
             ctx.rotate(this.angle + Math.PI/2);
             if (this.team === 'zombie') {
@@ -474,12 +522,15 @@
     }
 
     function onDeath(e) {
-        kills++; score += ZOMBIE_TYPES[e.zombieTypeId-1].scoreValue;
-        if (kills >= targetKills) {
-            currentLvl++; targetKills += 100; kills = 0;
-            const anim = document.getElementById('level-up-text');
-            if(anim) { anim.style.opacity = '1'; setTimeout(() => anim.style.opacity = '0', 2500); }
-            window.saveGameProgress(currentLvl, score, document.getElementById('player-name-input').value, selectedAvatarIdx);
+        spawnSplatter(e.x, e.y, e.color);
+        if (e.team === 'zombie') {
+            kills++; score += ZOMBIE_TYPES[e.zombieTypeId-1].scoreValue;
+            if (kills >= targetKills) {
+                currentLvl++; targetKills += 100; kills = 0;
+                const anim = document.getElementById('level-up-text');
+                if(anim) { anim.style.opacity = '1'; setTimeout(() => anim.style.opacity = '0', 2500); }
+                window.saveGameProgress(currentLvl, score, document.getElementById('player-name-input').value, selectedAvatarIdx);
+            }
         }
         updateHUD();
     }
@@ -490,12 +541,12 @@
         hideModals();
         document.getElementById('startup-screen').style.display = 'none';
         player = new Entity(0, 0, { type: 'human', isPlayer: true, hp: 350, speed: 9.5, team: 'human' });
-        entities = []; bullets = []; buildings = []; enemyBullets = []; items = []; portals = [];
+        entities = []; bullets = []; buildings = []; enemyBullets = []; splatters = []; items = [];
         if (resume && window.savedData) { currentLvl = window.savedData.level; score = window.savedData.score; } else currentLvl = 1;
         
         loadMedia();
-        for(let i=0; i<6; i++) buildings.push({ x: (Math.random()-0.5)*5000, y: (Math.random()-0.5)*5000, type: 'bunker', radius: 120 });
-        for(let i=0; i<12; i++) buildings.push({ x: (Math.random()-0.5)*5000, y: (Math.random()-0.5)*5000, type: 'grass', radius: 180 });
+        for(let i=0; i<6; i++) buildings.push({ x: (Math.random()-0.5)*5000, y: (Math.random()-0.5)*5000, type: 'bunker', radius: 125 });
+        for(let i=0; i<15; i++) buildings.push({ x: (Math.random()-0.5)*5000, y: (Math.random()-0.5)*5000, type: 'grass', radius: 180 });
         
         updateHUD(); requestAnimationFrame(gameLoop);
     }
@@ -513,7 +564,7 @@
             if (activeWKey === 'KNIFE') {
                 entities.forEach(e => { if(e.active && e.team==='zombie' && Math.hypot(e.x-player.x, e.y-player.y) < 160) e.takeDamage(1200*dt); });
             } else if (WEAPONS[activeWKey].ammo > 0) {
-                bullets.push({ x: player.x, y: player.y, vx: Math.cos(player.angle)*25*dt, vy: Math.sin(player.angle)*25*dt, damage: 1000*dt, life: 100, color: WEAPONS[activeWKey].color });
+                bullets.push({ x: player.x, y: player.y, vx: Math.cos(player.angle)*25*dt, vy: Math.sin(player.angle)*25*dt, damage: 1100*dt, life: 100, color: WEAPONS[activeWKey].color });
                 WEAPONS[activeWKey].ammo--;
             }
             lastFire = Date.now(); updateHUD();
@@ -531,7 +582,7 @@
             if (b.life <= 0) enemyBullets.splice(i, 1);
         });
 
-        if (entities.length < 80 && Math.random() < 0.15 * dt) {
+        if (entities.length < 100 && Math.random() < 0.15 * dt) {
             let a = Math.random()*Math.PI*2, d = 2000;
             const zd = ZOMBIE_TYPES[Math.floor(Math.random() * Math.min(10, currentLvl))];
             entities.push(new Entity(player.x+Math.cos(a)*d, player.y+Math.sin(a)*d, { ...zd, zombieTypeId: zd.id }));
@@ -541,7 +592,7 @@
         entities = entities.filter(e => e.active);
 
         if (isMultiplayer && Date.now() - (window.lastSync || 0) > 100) {
-            window.syncMultiplayer(currentRoomId, { x: player.x, y: player.y, angle: player.angle, hp: player.hp, name: document.getElementById('player-name-input').value, isTalking: isMicOn });
+            window.syncMultiplayer(currentRoomId, { x: player.x, y: player.y, angle: player.angle, hp: player.hp, name: document.getElementById('player-name-input').value, isTalking: isMicOn, avatarIdx: selectedAvatarIdx });
             window.lastSync = Date.now();
         }
     }
@@ -556,12 +607,12 @@
             ctx.fillStyle = "white"; ctx.font = "16px Arial"; ctx.fillText(b.type === 'bunker' ? "🛡️" : "🌿", sx-10, sy+10);
         });
 
-        bullets.forEach(b => { ctx.fillStyle = b.color || "#fbbf24"; ctx.beginPath(); ctx.arc((b.x-camera.x)*camera.zoom, (b.y-camera.y)*camera.zoom, 5*camera.zoom, 0, Math.PI*2); ctx.fill(); });
-        enemyBullets.forEach(b => { ctx.fillStyle = "#4ade80"; ctx.beginPath(); ctx.arc((b.x-camera.x)*camera.zoom, (b.y-camera.y)*camera.zoom, 7*camera.zoom, 0, Math.PI*2); ctx.fill(); });
+        bullets.forEach(b => { ctx.fillStyle = b.color || "#fbbf24"; ctx.beginPath(); ctx.arc((b.x-camera.x)*camera.zoom, (b.y-camera.y)*camera.zoom, 6*camera.zoom, 0, Math.PI*2); ctx.fill(); });
+        enemyBullets.forEach(b => { ctx.fillStyle = "#4ade80"; ctx.beginPath(); ctx.arc((b.x-camera.x)*camera.zoom, (b.y-camera.y)*camera.zoom, 8*camera.zoom, 0, Math.PI*2); ctx.fill(); });
 
         window.remotePlayers.forEach(p => {
             let sx = (p.x-camera.x)*camera.zoom, sy = (p.y-camera.y)*camera.zoom;
-            ctx.save(); ctx.translate(sx, sy); ctx.strokeStyle = p.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0,0, 25*camera.zoom, 0, Math.PI*2); ctx.stroke();
+            ctx.save(); ctx.translate(sx, sy); ctx.strokeStyle = p.color; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0,0, 26*camera.zoom, 0, Math.PI*2); ctx.stroke();
             ctx.rotate(p.angle + Math.PI/2); ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(0,0, 20*camera.zoom, 0, Math.PI*2); ctx.fill();
             ctx.restore();
             ctx.fillStyle = "white"; ctx.font = "bold 8px Orbitron"; ctx.textAlign = "center"; ctx.fillText(p.name.toUpperCase() + (p.isTalking ? " 🔊" : ""), sx, sy - 40);
@@ -577,8 +628,8 @@
         const s = 0.012, cx = 75, cy = 75;
         buildings.forEach(b => { mctx.fillStyle = b.type==='bunker'?"#3b82f6":"#22c55e"; mctx.beginPath(); mctx.arc(cx+(b.x-player.x)*s, cy+(b.y-player.y)*s, 3, 0, Math.PI*2); mctx.fill(); });
         entities.forEach(e => { mctx.fillStyle = "#ef4444"; mctx.beginPath(); mctx.arc(cx+(e.x-player.x)*s, cy+(e.y-player.y)*s, 1.5, 0, Math.PI*2); mctx.fill(); });
-        window.remotePlayers.forEach(p => { mctx.fillStyle = p.color; mctx.beginPath(); mctx.arc(cx+(p.x-player.x)*s, cy+(p.y-player.y)*s, 4, 0, Math.PI*2); mctx.fill(); });
-        mctx.fillStyle = window.playerColor; mctx.beginPath(); mctx.arc(cx, cy, 4, 0, Math.PI*2); mctx.fill();
+        window.remotePlayers.forEach(p => { mctx.fillStyle = p.color; mctx.beginPath(); mctx.arc(cx+(p.x-player.x)*s, cy+(p.y-player.y)*s, 5, 0, Math.PI*2); mctx.fill(); });
+        mctx.fillStyle = window.playerColor; mctx.beginPath(); mctx.arc(cx, cy, 5, 0, Math.PI*2); mctx.fill();
     }
 
     function gameLoop() { if (!isGameOver && !isPaused) updateLogic(); draw(); requestAnimationFrame(gameLoop); }
@@ -601,8 +652,7 @@
         if(isMicOn) {
             navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => { 
                 window.localStream = stream;
-                // En un sistema P2P real aquí se enviaría el stream al RTCPeerConnection.
-                // Simulamos el canal de voz sincronizando visualmente el estado.
+                // En multijugador enviamos este stream mediante RTCPeerConnection (Simulado)
             }).catch(() => { isMicOn = false; btn.classList.remove('mic-active'); });
         } else if(window.localStream) {
             window.localStream.getTracks().forEach(t => t.stop());
@@ -613,7 +663,8 @@
         const rid = document.getElementById('room-id-input').value.trim().toLowerCase();
         if(!rid) return;
         currentRoomId = rid;
-        document.getElementById('lobby-ui').classList.remove('hidden');
+        document.getElementById('room-badge').classList.remove('hidden');
+        document.getElementById('current-room-id').innerText = rid.toUpperCase();
         window.joinMultiplayerRoom(rid);
         isMultiplayer = true;
     };
@@ -628,10 +679,10 @@
     window.onload = () => {
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
         miniMapCanvas.width = 150; miniMapCanvas.height = 150;
-        const slider = document.getElementById('speed-slider');
-        if(slider) slider.oninput = (e) => {
+        const sld = document.getElementById('speed-slider');
+        if(sld) sld.oninput = (e) => {
             gameSpeedFactor = parseFloat(e.target.value);
-            const val = document.getElementById('speed-val'); if(val) val.innerText = gameSpeedFactor.toFixed(1) + "x";
+            const sv = document.getElementById('speed-val'); if(sv) sv.innerText = gameSpeedFactor.toFixed(1) + "x";
         };
     };
 
@@ -653,7 +704,7 @@
         const v = document.createElement('video'); v.src = 'avatar.mp4'; v.muted = v.autoplay = v.loop = v.playsInline = true; playerVideo = v;
         ZOMBIE_TYPES.forEach(t => { const zv = document.createElement('video'); zv.src = t.videoSrc; zv.muted = zv.autoplay = zv.loop = zv.playsInline = true; zombieVideos[t.id] = zv; });
     }
-    function spawnSplatter(x, y, color) { for(let i=0; i<4; i++) splatters.push({ x: x+(Math.random()-0.5)*40, y: y+(Math.random()-0.5)*40, r: 8, color }); }
+    function spawnSplatter(x, y, color) { for(let i=0; i<5; i++) splatters.push({ x: x+(Math.random()-0.5)*45, y: y+(Math.random()-0.5)*45, r: 9, color }); }
     function endGame() { isGameOver = true; document.getElementById('game-over').style.display = 'flex'; }
 </script>
 </body>
