@@ -1012,10 +1012,13 @@
         window.bunkers = [];
         window.weaponPickups = [];
         
-        // Tipos de zombies
-        const ZOMBIE_TYPES = Array.from({ length: 10 }, (_, i) => ({
+        // URL base para los recursos
+        const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/Ssteier2016/humanzomby/main/';
+        
+        // Tipos de zombies - CORREGIDO: usando la URL correcta
+        const ZOMBIE_TYPES = Array.from({ length: 4 }, (_, i) => ({
             id: i + 1, 
-            videoSrc: `assets/zombies/zombie${i+1}.mp4`, 
+            videoSrc: `${GITHUB_BASE_URL}assets/zombies/zombie${i+1}.mp4`, 
             radius: (35 + (i * 12)), 
             hp: 140 * Math.pow(1.8, i),
             speed: 3.5 - (i * 0.3), 
@@ -1067,8 +1070,10 @@
         let zoomGesture = { initialDistance: 0, initialZoom: 0.8 };
         let heldWindows = [];
         
-        // Cargar medios
+        // Cargar medios - CORREGIDO
         function loadMedia() {
+            console.log('Cargando medios desde GitHub...');
+            
             // Cargar videos de zombies
             ZOMBIE_TYPES.forEach(t => {
                 const v = document.createElement('video');
@@ -1077,27 +1082,51 @@
                 v.muted = true; 
                 v.autoplay = true; 
                 v.playsInline = true;
-                v.play().catch(() => {}); 
+                v.crossOrigin = 'anonymous'; // Importante para recursos externos
+                v.onerror = () => {
+                    console.error(`Error cargando video zombie ${t.id}: ${t.videoSrc}`);
+                    // Si falla, usar un color en lugar del video
+                };
+                v.onloadeddata = () => {
+                    console.log(`Video zombie ${t.id} cargado: ${t.videoSrc}`);
+                    v.play().catch(e => console.log(`Error reproduciendo zombie ${t.id}:`, e));
+                };
                 zombieVideos[t.id] = v;
             });
             
-            // Cargar video del jugador
+            // Cargar video del jugador - CORREGIDO
             playerVideo = document.createElement('video');
-            playerVideo.src = 'assets/avatars/avatar.mp4'; 
+            playerVideo.src = `${GITHUB_BASE_URL}assets/avatars/avatar.mp4`; 
             playerVideo.loop = true; 
             playerVideo.muted = true; 
             playerVideo.autoplay = true; 
             playerVideo.playsInline = true;
-            playerVideo.play().catch(() => {});
+            playerVideo.crossOrigin = 'anonymous';
+            playerVideo.onerror = () => {
+                console.error('Error cargando video avatar:', playerVideo.src);
+            };
+            playerVideo.onloadeddata = () => {
+                console.log('Video avatar cargado:', playerVideo.src);
+                playerVideo.play().catch(e => console.log('Error reproduciendo avatar:', e));
+            };
             
-            // Cargar video del soldado (con casco)
+            // Cargar video del soldado (con casco) - CORREGIDO
             soldierVideo = document.createElement('video');
-            soldierVideo.src = 'assets/avatars/avatarsoldado.mp4'; 
+            soldierVideo.src = `${GITHUB_BASE_URL}assets/avatars/avatarsoldado.mp4`; 
             soldierVideo.loop = true; 
             soldierVideo.muted = true; 
             soldierVideo.autoplay = true; 
             soldierVideo.playsInline = true;
-            soldierVideo.play().catch(() => {});
+            soldierVideo.crossOrigin = 'anonymous';
+            soldierVideo.onerror = () => {
+                console.error('Error cargando video soldado:', soldierVideo.src);
+            };
+            soldierVideo.onloadeddata = () => {
+                console.log('Video soldado cargado:', soldierVideo.src);
+                soldierVideo.play().catch(e => console.log('Error reproduciendo soldado:', e));
+            };
+            
+            console.log('Medios cargados correctamente');
         }
 
         // Clase Entity para jugadores y zombies
@@ -1377,6 +1406,7 @@
                         ctx.rotate(Math.PI); 
                         ctx.drawImage(v, -size/2, -size/2, size, size); 
                     } else { 
+                        // Si no hay video, usar color
                         ctx.fillStyle = this.color; 
                         ctx.beginPath(); 
                         ctx.arc(0, 0, size/2, 0, Math.PI*2); 
@@ -1410,12 +1440,26 @@
                     }
                 } else {
                     // Dibujar jugador (local o remoto)
-                    const v = this.hasHelmet ? soldierVideo : playerVideo;
-                    if (v && v.readyState >= 2) {
-                        ctx.drawImage(v, -size/2, -size/2, size, size);
-                    } else {
+                    let drawVideo = false;
+                    
+                    if (this.isPlayer) {
+                        const v = this.hasHelmet ? soldierVideo : playerVideo;
+                        if (v && v.readyState >= 2) {
+                            ctx.drawImage(v, -size/2, -size/2, size, size);
+                            drawVideo = true;
+                        }
+                    }
+                    
+                    if (!drawVideo) {
                         const avatarIdx = this.isRemote ? (this.avatarIdx || 0) : selectedAvatarIdx;
-                        ctx.drawImage(images.hero[avatarIdx] || images.hero[0], -size/2, -size/2, size, size);
+                        if (images.hero && images.hero[avatarIdx]) {
+                            ctx.drawImage(images.hero[avatarIdx], -size/2, -size/2, size, size);
+                        } else {
+                            ctx.fillStyle = this.color;
+                            ctx.beginPath();
+                            ctx.arc(0, 0, size/2, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
                     }
                     
                     // Nombre del jugador
@@ -1741,7 +1785,7 @@
             // Generar zombies
             if (entities.length < 80 && Math.random() < 0.1 * dt) {
                 let a = Math.random()*Math.PI*2, d = 2000;
-                let typeIdx = Math.floor(Math.random() * Math.min(10, currentLvl));
+                let typeIdx = Math.floor(Math.random() * Math.min(4, currentLvl));
                 const zd = ZOMBIE_TYPES[typeIdx];
                 entities.push(new Entity(
                     player.x + Math.cos(a)*d, 
@@ -2361,7 +2405,7 @@
                 oPr.style.backgroundColor = progress > 70 ? '#10b981' : progress > 30 ? '#fbbf24' : '#ef4444';
             }
             
-            // Actualizar estado del micrófono
+            // Actualizar estado del micrófono - CORREGIDO
             const micBtn = document.getElementById('mic-btn');
             if (micBtn) {
                 if (microphoneActive) {
@@ -2550,26 +2594,120 @@
             }
         });
 
-        // Control de micrófono
+        // Control de micrófono - CORREGIDO COMPLETAMENTE
+        let micTouchTimeout = null;
+        let isMicTouchActive = false;
+        
         document.getElementById('mic-btn').addEventListener('click', async (e) => {
             e.preventDefault();
             
-            if (!microphoneToggleMode) {
-                // Modo push to talk (mantener presionado)
-                microphoneActive = true;
-                await activateMicrophone();
-            } else {
-                // Modo toggle
+            // Si es un clic simple (toggle)
+            if (!isMicTouchActive) {
                 microphoneActive = !microphoneActive;
                 if (microphoneActive) {
                     await activateMicrophone();
+                    showToast('MICRÓFONO ACTIVADO', 'info');
                 } else {
                     deactivateMicrophone();
+                    showToast('MICRÓFONO DESACTIVADO', 'info');
                 }
+                updateHUD();
+            }
+        });
+        
+        // Para modo push-to-talk con toque prolongado
+        document.getElementById('mic-btn').addEventListener('touchstart', async (e) => {
+            e.preventDefault();
+            isMicTouchActive = true;
+            
+            micTouchTimeout = setTimeout(async () => {
+                // Mantener presionado por más de 300ms = push-to-talk
+                microphoneActive = true;
+                await activateMicrophone();
+                updateHUD();
+                showToast('MANTÉN PRESIONADO PARA HABLAR', 'info');
+            }, 300);
+        });
+        
+        document.getElementById('mic-btn').addEventListener('touchend', (e) => {
+            e.preventDefault();
+            
+            if (micTouchTimeout) {
+                clearTimeout(micTouchTimeout);
+                micTouchTimeout = null;
             }
             
-            updateHUD();
-            showToast(microphoneActive ? 'MICRÓFONO ACTIVADO' : 'MICRÓFONO DESACTIVADO', 'info');
+            if (isMicTouchActive && microphoneActive) {
+                microphoneActive = false;
+                deactivateMicrophone();
+                updateHUD();
+                showToast('MICRÓFONO LIBERADO', 'info');
+            }
+            
+            isMicTouchActive = false;
+        });
+        
+        document.getElementById('mic-btn').addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+            
+            if (micTouchTimeout) {
+                clearTimeout(micTouchTimeout);
+                micTouchTimeout = null;
+            }
+            
+            if (microphoneActive) {
+                microphoneActive = false;
+                deactivateMicrophone();
+                updateHUD();
+                showToast('MICRÓFONO DESACTIVADO', 'info');
+            }
+            
+            isMicTouchActive = false;
+        });
+        
+        // Para mouse (push-to-talk con click sostenido)
+        document.getElementById('mic-btn').addEventListener('mousedown', async (e) => {
+            e.preventDefault();
+            
+            micTouchTimeout = setTimeout(async () => {
+                // Mantener presionado por más de 300ms = push-to-talk
+                microphoneActive = true;
+                await activateMicrophone();
+                updateHUD();
+                showToast('MANTÉN PRESIONADO PARA HABLAR', 'info');
+            }, 300);
+        });
+        
+        document.getElementById('mic-btn').addEventListener('mouseup', (e) => {
+            e.preventDefault();
+            
+            if (micTouchTimeout) {
+                clearTimeout(micTouchTimeout);
+                micTouchTimeout = null;
+            }
+            
+            if (microphoneActive) {
+                microphoneActive = false;
+                deactivateMicrophone();
+                updateHUD();
+                showToast('MICRÓFONO LIBERADO', 'info');
+            }
+        });
+        
+        document.getElementById('mic-btn').addEventListener('mouseleave', (e) => {
+            e.preventDefault();
+            
+            if (micTouchTimeout) {
+                clearTimeout(micTouchTimeout);
+                micTouchTimeout = null;
+            }
+            
+            if (microphoneActive) {
+                microphoneActive = false;
+                deactivateMicrophone();
+                updateHUD();
+                showToast('MICRÓFONO DESACTIVADO', 'info');
+            }
         });
         
         // Activar micrófono
@@ -2587,40 +2725,33 @@
                     // Aquí se implementaría el envío de audio a otros jugadores
                     // mediante WebRTC o WebSockets
                     console.log('Micrófono activado');
+                    
+                    // Crear un contexto de audio para visualización (opcional)
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = audioContext.createMediaStreamSource(microphoneStream);
+                    const analyser = audioContext.createAnalyser();
+                    source.connect(analyser);
+                    
+                    // Podrías usar el analizador para mostrar actividad de voz
                 }
             } catch (err) {
                 console.error('Error al acceder al micrófono:', err);
                 showToast('Error al acceder al micrófono', 'error');
                 microphoneActive = false;
+                updateHUD();
             }
         }
         
         // Desactivar micrófono
         function deactivateMicrophone() {
             if (microphoneStream) {
-                microphoneStream.getTracks().forEach(track => track.stop());
+                microphoneStream.getTracks().forEach(track => {
+                    track.stop();
+                });
                 microphoneStream = null;
                 console.log('Micrófono desactivado');
             }
         }
-        
-        // Alternar modo de micrófono (un clic = toggle, mantener = push to talk)
-        document.getElementById('mic-btn').addEventListener('mousedown', () => {
-            microphoneToggleMode = false;
-        });
-        
-        document.getElementById('mic-btn').addEventListener('touchstart', () => {
-            microphoneToggleMode = false;
-        });
-        
-        document.getElementById('mic-btn').addEventListener('click', (e) => {
-            if (e.detail === 1) {
-                // Un solo clic - modo toggle
-                setTimeout(() => {
-                    microphoneToggleMode = true;
-                }, 100);
-            }
-        });
 
         // Inicializar al cargar la página
         window.onload = () => {
@@ -2663,6 +2794,7 @@
             e.preventDefault(); 
         });
         bAct.addEventListener('touchend', () => isFiring = false);
+        bAct.addEventListener('touchcancel', () => isFiring = false);
         bAct.addEventListener('mousedown', () => isFiring = true);
         bAct.addEventListener('mouseup', () => isFiring = false);
         bAct.addEventListener('mouseleave', () => isFiring = false);
@@ -2800,6 +2932,7 @@
             if (microphoneActive) {
                 deactivateMicrophone();
                 microphoneActive = false;
+                updateHUD();
             }
         }
 
