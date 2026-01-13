@@ -7225,31 +7225,79 @@ hideModals();
 window.skipTutorial = () => {
 hideModals();
 };
-// Mostrar créditos
-window.showCredits = () => {
-document.getElementById('credits-modal').style.display = 'flex';
-const content = document.querySelector('#credits-modal .modal-content');
-content.innerHTML = `
-<div class="modal-header">
-<h2 class="font-game"><i class="fas fa-info-circle mr-3"></i> CRÉDITOS</h2>
-<p>DESARROLLADO CON ❤️ PARA SOBREVIVIENTES</p>
-</div>
-<div class="space-y-8">
-<div>
-<h3 class="text-blue-400 font-bold text-lg mb-4">DESARROLLO PRINCIPAL</h3>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-<div class="bg-white/5 p-4 rounded-lg">
-<div class="text-white font-bold">DISEÑO Y PROGRAMACIÓN</div>
-<p class="text-gray-400">Motor de juego completo con HTML5, CSS3 y JavaScript</p>
-</div>
-<div class="bg-white/5 p-4 rounded-lg">
-<div class="text-white font-bold">ARTE Y GRÁFICOS</div>
-<p class="text-gray-400">Iconos de Flaticon, efectos visuales personalizados</p>
-</div>
-</div>
-</div>
-<div>
-<h3 class="text-green-400 font-bold text-lg mb-4">TECNOLOGÍAS UTILIZADAS</h3>
-<div class="flex flex-wrap gap-3">
-<span class="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full">HTML5 Canvas</span>
-<span class="bg-purple-500/20 text
+        // Mostrar créditos
+        window.showCredits = () => {
+            document.getElementById('credits-modal').style.display = 'flex';
+            
+            const content = document.querySelector('#credits-modal .modal-content');
+            content.innerHTML = `
+                <div class="modal-header">
+                    <h2 class="font-game"><i class="fas fa-info-circle mr-3"></i> CRÉDITOS</h2>
+                    <p>DESARROLLADO CON ❤️ PARA SOBREVIVIENTES</p>
+                </div>
+                
+                <div class="space-y-8">
+                    <div>
+                        <h3 class="text-blue-400 font-bold text-lg mb-4">DESARROLLO PRINCIPAL</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-white/5 p-4 rounded-lg">
+                                <div class="text-white font-bold">DISEÑO Y PROGRAMACIÓN</div>
+                                <p class="text-gray-400">Motor de juego completo con HTML5, CSS3 y JavaScript</p>
+                            </div>
+                            <div class="bg-white/5 p-4 rounded-lg">
+                                <div class="text-white font-bold">ARTE Y GRÁFICOS</div>
+                                <p class="text-gray-400">Iconos de Flaticon, efectos visuales personalizados</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-green-400 font-bold text-lg mb-4">TECNOLOGÍAS UTILIZADAS</h3>
+                        <div class="flex flex-wrap gap-3">
+                            <span class="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full">HTML5 Canvas</span>
+                            <span class="bg-purple-500/20 text-purple-400 px-3 py-1 rounded-full">Firebase</span>
+                            <span class="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full">JavaScript ES6+</span>
+                            <span class="bg-teal-500/20 text-teal-400 px-3 py-1 rounded-full">Tailwind CSS</span>
+                            <span class="bg-red-500/20 text-red-400 px-3 py-1 rounded-full">Google Fonts</span>
+                            <span class="bg-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full">Font Awesome</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-amber-400 font-bold text-lg mb-4">AGRADECIMIENTOS ESPECIALES</h3>
+                        <p class="text-gray-300">
+                            A todos los jugadores que prueban el juego, reportan bugs y sugieren mejoras. 
+                            Esta comunidad es lo que hace que el desarrollo valga la pena.
+                        </p>
+                    </div>
+                    
+                    <div class="border-t border-white/10 pt-6">
+                        <p class="text-center text-gray-500 text-sm">
+                            ZOMBIE SURVIVOR: ULTIMATE VIDEO WARFARE - Edición Extendida<br>
+                            Versión 2.0.0 | © 2024 Todos los derechos reservados
+                        </p>
+                    </div>
+                </div>
+                
+                <button onclick="hideModals()" class="modal-button primary mt-8 clickable">
+                    <i class="fas fa-times"></i>
+                    CERRAR
+                </button>
+            `;
+        };
+
+        // Mostrar registro de cambios
+        window.showChangelog = () => {
+            showToast('Registro de cambios no disponible en esta versión', 'info');
+        };
+
+        // Inicialización completa
+        console.log('Zombie Survivor: Ultimate Video Warfare - Edición Extendida');
+        console.log('Motor de juego cargado y listo');
+        console.log('Clases disponibles:', CHARACTER_CLASSES.length);
+        console.log('Armas disponibles:', Object.keys(WEAPONS).length);
+        console.log('Tipos de zombies:', ZOMBIE_TYPES.length);
+        console.log('Sistemas cargados: Combate, Clases, Habilidades, Eventos, Multijugador');
+    </script>
+</body>
+</html>
