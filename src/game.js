@@ -233,6 +233,7 @@ window.mines = [];
 window.bunkers = [];
 window.particles = [];
 window.remotePlayers = [];
+window.weaponPickups = [];
 
 // Logros
 let achievements = {
@@ -2175,6 +2176,7 @@ window.startGame = function(resume) {
   window.bunkers = [];
   window.particles = [];
   window.remotePlayers = [];
+  window.weaponPickups = [];
   isGameOver = false;
   score = 0;
   kills = 0;
