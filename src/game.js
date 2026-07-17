@@ -879,7 +879,6 @@ class Entity {
     }
   }
 }
-}
 
 // 5. EFECTOS ESPECIALES Y DE PARTÍCULAS
 function spawnParticle(x, y, config) {
